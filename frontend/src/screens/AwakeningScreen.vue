@@ -11,6 +11,7 @@ const buddyId = route.params.buddyId
 const buddy   = BUDDIES[buddyId]
 const save    = game.buddies[buddyId]
 const loc     = Object.values(LOCATIONS).find(l => l.buddyId === buddyId)
+const locationId = loc?.id
 
 if (!buddy || !save) router.replace('/map')
 
