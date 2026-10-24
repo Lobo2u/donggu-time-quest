@@ -98,6 +98,10 @@ onMounted(() => {
             <span class="msr" style="font-size:20px">share</span>
             방문 카드 만들기
           </button>
+          <button class="btn-coupon" v-if="locationId" @click="router.push(`/coupon/${locationId}`)">
+            <span class="msr" style="font-size:20px">local_offer</span>
+            파트너 쿠폰
+          </button>
           <button class="btn-map" @click="router.push('/map')">
             <span class="msr" style="font-size:20px">map</span>
             지도로
@@ -203,6 +207,11 @@ onMounted(() => {
   flex: 2; display: flex; align-items: center; justify-content: center; gap: 8px;
   background: var(--orange); border: none; border-radius: 18px; height: 56px;
   font-family: var(--font); font-size: 16px; font-weight: 800; color: var(--navy); cursor: pointer;
+}
+.btn-coupon {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: #FFFFFF18; border: 1px solid var(--teal); border-radius: 18px; height: 56px;
+  font-family: var(--font); font-size: 14px; font-weight: 800; color: var(--teal); cursor: pointer;
 }
 .btn-map {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;

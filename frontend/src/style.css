@@ -64,6 +64,50 @@ html, body {
   user-select: none;
 }
 
+/* ── Leaflet 커스텀 마커 (scoped 안됨) ─────────────────────────── */
+.lf-marker {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; user-select: none;
+}
+.lf-marker.locked { opacity: 0.55; cursor: not-allowed; }
+
+.lf-dot {
+  width: 52px; height: 52px; border-radius: 50%; border: 2.5px solid;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; transition: transform 0.15s;
+}
+.lf-marker:not(.locked):active .lf-dot { transform: scale(0.88); }
+.lf-marker.awoken .lf-dot { border-width: 3px; }
+
+.lf-label {
+  color: #FFF; border-radius: 10px; padding: 4px 9px;
+  font-family: var(--font); font-size: 11px; font-weight: 800; white-space: nowrap;
+}
+
+/* GPS 사용자 마커 */
+.lf-user-marker { position: relative; width: 32px; height: 32px; }
+.lf-user-dot {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #4A90D9; border: 3px solid white;
+  box-shadow: 0 2px 6px #00000044;
+}
+.lf-user-pulse {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #4A90D944;
+  animation: user-pulse 2s ease-out infinite;
+}
+@keyframes user-pulse {
+  0%   { transform: translate(-50%,-50%) scale(0.4); opacity: 0.8; }
+  100% { transform: translate(-50%,-50%) scale(1.4); opacity: 0; }
+}
+
+/* Leaflet attribution 스타일 */
+.leaflet-control-attribution { font-size: 9px !important; }
+
 .btn-primary {
   display: flex;
   align-items: center;

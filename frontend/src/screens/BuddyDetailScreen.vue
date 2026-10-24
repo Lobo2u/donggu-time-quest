@@ -89,6 +89,12 @@ const xpPercent = (save?.xp ?? 0) + '%'
       </div>
     </div>
 
+    <!-- 버디와 대화 버튼 -->
+    <button class="chat-cta" @click="$router.push(`/chat/${buddyId}`)">
+      <span class="msr" style="font-size:22px; color:var(--navy)">chat</span>
+      {{ buddy.name }}와 대화하기
+    </button>
+
     <div style="height: 20px"></div>
   </div>
 </template>
@@ -168,6 +174,14 @@ const xpPercent = (save?.xp ?? 0) + '%'
   display: flex; align-items: flex-start; gap: 6px;
   background: var(--sky); border-radius: 12px; padding: 8px 10px;
   font-size: 11px; font-weight: 700; color: var(--ink); line-height: 1.4; word-break: keep-all;
+}
+
+.chat-cta {
+  margin: 4px 16px 0;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 54px; background: var(--orange); border: none; border-radius: 18px;
+  font-family: var(--font); font-size: 16px; font-weight: 800; color: var(--navy);
+  cursor: pointer; box-shadow: 0 5px 12px #9C5B1E3D;
 }
 
 .location-card {

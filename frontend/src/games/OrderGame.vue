@@ -162,7 +162,7 @@ onMounted(showSequence)
     <!-- 힌트 버튼 -->
     <button class="hint-btn" :disabled="hintUsed || phase !== 'recall'" @click="useHint">
       <span class="msr" style="font-size:16px">auto_fix_high</span>
-      {{ hintUsed ? '힌트 사용됨' : '중자의 능력: 첫 번째 물건 힌트' }}
+      {{ hintUsed ? '힌트 사용됨' : '중앙이의 능력: 첫 번째 물건 힌트' }}
     </button>
 
     <p class="attempt-count">시도 {{ attempts }}회</p>

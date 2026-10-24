@@ -83,7 +83,7 @@ function goReward() {
       <div class="discovery-text">
         <p class="discovery-kicker">시간 친구 발견!</p>
         <h2 class="discovery-title">저기… 뭔가 움직여요!</h2>
-        <p class="discovery-sub">소제동 골목 어딘가에서 작은 빛이 깜빡이고 있어요.</p>
+        <p class="discovery-sub">{{ loc?.name ?? '이곳' }} 어딘가에서 작은 빛이 깜빡이고 있어요.</p>
       </div>
 
       <div class="buddy-reveal">
