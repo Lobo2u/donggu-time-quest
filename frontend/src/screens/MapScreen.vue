@@ -56,17 +56,24 @@ function markerHtml(loc) {
 }
 
 // ── 지도 초기화 ───────────────────────────────────────────────────────────────
+// 상태별 마커 스택 우선순위 (클릭 가능한 active 가 항상 위로)
+function zOffset(id) {
+  const s = locStatus(id)
+  return { in_progress: 1000, available: 800, complete: 400, locked: 0 }[s] ?? 0
+}
+
 function initMap() {
   leafletMap = L.map(mapEl.value, {
     center: [36.335, 127.428],
-    zoom: 14,
-    zoomControl: false,
+    zoom: 15,
+    zoomControl: true,
     attributionControl: true,
   })
+  leafletMap.zoomControl.setPosition('bottomright')
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 18,
+    maxZoom: 19,
   }).addTo(leafletMap)
 
   // 지도 색감 오버레이 (게임 분위기)
@@ -80,6 +87,20 @@ function initMap() {
 
   // 지도 클릭 시 선택 해제
   leafletMap.on('click', () => { selected.value = null })
+
+  // 현재 목표 지점으로 이동 (겹친 마커 중 활성 마커를 또렷하게)
+  focusObjective()
+}
+
+// 활성 목표(진행중/탐험가능) 위치로 지도 중심 이동. 없으면 전체 보기
+function focusObjective() {
+  const active = locationList.find(l => ['in_progress', 'available'].includes(locStatus(l.id)))
+  if (active) {
+    leafletMap.setView([active.lat, active.lng], 16, { animate: false })
+  } else {
+    const pts = locationList.map(l => [l.lat, l.lng])
+    leafletMap.fitBounds(pts, { padding: [60, 60], maxZoom: 16 })
+  }
 }
 
 function addMarker(loc) {
@@ -90,7 +111,7 @@ function addMarker(loc) {
     iconAnchor: [40, 68],
   })
 
-  const marker = L.marker([loc.lat, loc.lng], { icon })
+  const marker = L.marker([loc.lat, loc.lng], { icon, zIndexOffset: zOffset(loc.id) })
     .addTo(leafletMap)
     .on('click', (e) => {
       L.DomEvent.stopPropagation(e)
@@ -109,6 +130,7 @@ function updateMarker(loc) {
     iconSize: [80, 76],
     iconAnchor: [40, 68],
   }))
+  m.setZIndexOffset(zOffset(loc.id))
 }
 
 // 완료 장소에 복원 효과 (반짝이는 원)
