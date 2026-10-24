@@ -5,6 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
+import OnboardingTour from '../components/OnboardingTour.vue'
 import { game, resetGame, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
 
@@ -231,6 +232,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="screen map-screen">
+    <!-- 온보딩 튜토리얼 (최초 1회) -->
+    <OnboardingTour />
+
     <!-- Leaflet 지도 컨테이너 -->
     <div ref="mapEl" class="leaflet-map-container" @click.self="selected = null"></div>
 
