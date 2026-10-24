@@ -5,10 +5,14 @@ const router = useRouter()
 const route = useRoute()
 
 const tabs = [
-  { label: '탐험', icon: 'explore',      route: '/map' },
-  { label: '도감', icon: 'auto_stories', route: '/collection' },
-  { label: '내 기록', icon: 'timeline',  route: '/record' },
+  { label: '탐험', icon: 'explore',      route: '/map',        matchPrefix: '/map' },
+  { label: '도감', icon: 'auto_stories', route: '/collection', matchPrefix: '/collection' },
+  { label: '내 기록', icon: 'timeline',  route: '/record',     matchPrefix: '/record' },
 ]
+
+function isActive(tab) {
+  return route.path === tab.route || route.path.startsWith(tab.matchPrefix + '/')
+}
 </script>
 
 <template>
@@ -17,7 +21,7 @@ const tabs = [
       v-for="tab in tabs"
       :key="tab.route"
       class="tab"
-      :class="{ active: route.path === tab.route }"
+      :class="{ active: isActive(tab) }"
       @click="router.push(tab.route)"
     >
       <span class="msr" :style="{ fontSize: '25px' }">{{ tab.icon }}</span>
