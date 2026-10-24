@@ -1,0 +1,26 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0B3A5C"/>
+      <stop offset="1" stop-color="#08233F"/>
+    </linearGradient>
+    <linearGradient id="shard" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFE19A"/>
+      <stop offset="0.6" stop-color="#FF9F1C"/>
+      <stop offset="1" stop-color="#E66D00"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7CE1D9" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#7CE1D9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="248" r="170" fill="url(#glow)"/>
+  <!-- 시간 조각 육각형 -->
+  <polygon points="256,96 392,176 392,320 256,400 120,320 120,176"
+    fill="url(#shard)" stroke="#FFF4D6" stroke-width="10" stroke-linejoin="round"/>
+  <!-- 중앙 하이라이트 -->
+  <polygon points="256,150 300,176 256,202 212,176" fill="#FFFFFF" opacity="0.4"/>
+  <!-- 동구 이니셜 -->
+  <text x="256" y="300" text-anchor="middle" font-family="sans-serif" font-size="92" font-weight="900" fill="#08233F">동</text>
+</svg>
