@@ -88,7 +88,7 @@ function goReward() {
 
       <div class="buddy-reveal">
         <div class="buddy-glow"></div>
-        <BuddySvg mood="shy" :size="140" />
+        <BuddySvg mood="shy" :size="140" :variant="buddy.variant" />
       </div>
 
       <div class="peek-info">
@@ -130,7 +130,7 @@ function goReward() {
       <!-- 버디 표시 -->
       <div class="buddy-display" :class="{ wrong: wrongChoice }">
         <div class="buddy-glow-sm"></div>
-        <BuddySvg :mood="buddyMood" :size="120" />
+        <BuddySvg :mood="buddyMood" :size="120" :variant="buddy.variant" />
 
         <!-- 버디 반응 버블 -->
         <Transition name="bubble">
@@ -194,7 +194,7 @@ function goReward() {
 
       <div class="success-buddy">
         <div class="success-glow"></div>
-        <BuddySvg mood="excited" :size="150" />
+        <BuddySvg mood="excited" :size="150" :variant="buddy.variant" />
       </div>
 
       <div class="buddy-profile-card">

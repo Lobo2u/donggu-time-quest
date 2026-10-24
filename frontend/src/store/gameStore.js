@@ -14,10 +14,10 @@ const defaultState = () => ({
     indong:  { status: 'locked',    missionComplete: false, arrivedOnce: false },
   },
   buddies: {
-    sojo:  { owned: false, level: 1, xp: 0 },
+    sojo:   { owned: false, level: 1, xp: 0 },
     jungja: { owned: false, level: 1, xp: 0 },
-    heomi: { owned: false, level: 1, xp: 0 },
-    indo:  { owned: false, level: 1, xp: 0 },
+    heomi:  { owned: false, level: 1, xp: 0 },
+    indo:   { owned: false, level: 1, xp: 0 },
   },
   // persisted mid-mission state
   activeMission: null, // { locationId } | null

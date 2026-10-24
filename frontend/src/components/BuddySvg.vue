@@ -1,11 +1,20 @@
 <script setup>
-// 소조 - 소제동의 시간 친구 (창작 캐릭터)
-// CSS SVG 일러스트, 외부 에셋 없음
+// 시간 친구 SVG (창작 캐릭터) - variant prop으로 색상 변경
+import { computed } from 'vue'
 
 const props = defineProps({
-  mood: { type: String, default: 'idle' }, // idle | shy | happy | excited
-  size: { type: Number, default: 120 },
+  mood:    { type: String, default: 'idle' }, // idle | shy | happy | excited
+  size:    { type: Number, default: 120 },
+  variant: { type: String, default: 'sojo' }, // sojo | jungja | heomi | indo
 })
+
+const palette = {
+  sojo:   { body: '#B8EDE8', glow: '#7CE1D9', tip: '#FF9F1C', fin: '#A8E6E3', eye: '#1A4A5E' },
+  jungja: { body: '#FFD9A0', glow: '#FFA940', tip: '#FF5722', fin: '#FFECC0', eye: '#5E3A0A' },
+  heomi:  { body: '#B8E8C0', glow: '#68C270', tip: '#8BC34A', fin: '#A0DCA8', eye: '#1A4A2E' },
+  indo:   { body: '#C8C8F0', glow: '#9090D8', tip: '#673AB7', fin: '#B8B8E8', eye: '#1A1A5E' },
+}
+const c = computed(() => palette[props.variant] ?? palette.sojo)
 </script>
 
 <template>
@@ -23,14 +32,14 @@ const props = defineProps({
 
     <!-- 몸 발광 링 (happy/excited 시 밝아짐) -->
     <ellipse cx="60" cy="77" rx="48" ry="56"
-      fill="none" stroke="#7CE1D9"
+      fill="none" :stroke="c.glow"
       :stroke-width="mood === 'excited' ? 4 : 2"
       :opacity="mood === 'idle' || mood === 'shy' ? 0.35 : 0.7"
       class="glow-ring"
     />
 
     <!-- 몸통 -->
-    <ellipse cx="60" cy="77" rx="42" ry="50" fill="#B8EDE8" />
+    <ellipse cx="60" cy="77" rx="42" ry="50" :fill="c.body" />
     <!-- 몸통 하이라이트 -->
     <ellipse cx="50" cy="56" rx="14" ry="10" fill="white" opacity="0.25" />
 
@@ -49,12 +58,12 @@ const props = defineProps({
       :fill="mood === 'happy' || mood === 'excited' ? '#FF9F1C22' : '#FFFFFF11'" />
 
     <!-- 지느러미 (side fins) -->
-    <path d="M18 75 Q8 63 18 51 Q24 66 18 75" fill="#A8E6E3" />
-    <path d="M102 75 Q112 63 102 51 Q96 66 102 75" fill="#A8E6E3" />
+    <path d="M18 75 Q8 63 18 51 Q24 66 18 75" :fill="c.fin" />
+    <path d="M102 75 Q112 63 102 51 Q96 66 102 75" :fill="c.fin" />
 
     <!-- 눈 -->
-    <ellipse :cx="mood === 'shy' ? 45 : 47" cy="76" rx="8" ry="9" fill="#1A4A5E" />
-    <ellipse :cx="mood === 'shy' ? 73 : 73" cy="76" rx="8" ry="9" fill="#1A4A5E" />
+    <ellipse :cx="mood === 'shy' ? 45 : 47" cy="76" rx="8" ry="9" :fill="c.eye" />
+    <ellipse :cx="mood === 'shy' ? 73 : 73" cy="76" rx="8" ry="9" :fill="c.eye" />
     <!-- 눈 하이라이트 -->
     <ellipse :cx="mood === 'shy' ? 47 : 49" cy="73" rx="3" ry="3.5" fill="white" />
     <ellipse :cx="mood === 'shy' ? 75 : 75" cy="73" rx="3" ry="3.5" fill="white" />
@@ -66,8 +75,8 @@ const props = defineProps({
 
     <!-- shy 눈꺼풀 -->
     <template v-if="mood === 'shy'">
-      <ellipse cx="45" cy="74" rx="8" ry="5" fill="#B8EDE8" />
-      <ellipse cx="73" cy="74" rx="8" ry="5" fill="#B8EDE8" />
+      <ellipse cx="45" cy="74" rx="8" ry="5" :fill="c.body" />
+      <ellipse cx="73" cy="74" rx="8" ry="5" :fill="c.body" />
     </template>
 
     <!-- 볼 홍조 -->
@@ -87,18 +96,18 @@ const props = defineProps({
 
     <!-- 안테나 -->
     <line x1="60" y1="27" x2="60" y2="42"
-      stroke="#7CE1D9" stroke-width="2.5" stroke-linecap="round" />
+      :stroke="c.glow" stroke-width="2.5" stroke-linecap="round" />
     <!-- 안테나 별 -->
-    <circle cx="60" cy="22" r="8" fill="#FF9F1C" class="antenna-star" />
+    <circle cx="60" cy="22" r="8" :fill="c.tip" class="antenna-star" />
     <circle cx="60" cy="22" r="5" fill="#FFE19A" />
     <circle cx="60" cy="22" r="2.5" fill="white" opacity="0.7" />
     <!-- 별 광선 (excited 시) -->
     <template v-if="mood === 'excited'">
-      <line x1="60" y1="10" x2="60" y2="14" stroke="#FF9F1C" stroke-width="2" stroke-linecap="round" />
-      <line x1="72" y1="22" x2="68" y2="22" stroke="#FF9F1C" stroke-width="2" stroke-linecap="round" />
-      <line x1="48" y1="22" x2="52" y2="22" stroke="#FF9F1C" stroke-width="2" stroke-linecap="round" />
-      <line x1="69" y1="13" x2="66" y2="16" stroke="#FF9F1C" stroke-width="2" stroke-linecap="round" />
-      <line x1="51" y1="13" x2="54" y2="16" stroke="#FF9F1C" stroke-width="2" stroke-linecap="round" />
+      <line x1="60" y1="10" x2="60" y2="14" :stroke="c.tip" stroke-width="2" stroke-linecap="round" />
+      <line x1="72" y1="22" x2="68" y2="22" :stroke="c.tip" stroke-width="2" stroke-linecap="round" />
+      <line x1="48" y1="22" x2="52" y2="22" :stroke="c.tip" stroke-width="2" stroke-linecap="round" />
+      <line x1="69" y1="13" x2="66" y2="16" :stroke="c.tip" stroke-width="2" stroke-linecap="round" />
+      <line x1="51" y1="13" x2="54" y2="16" :stroke="c.tip" stroke-width="2" stroke-linecap="round" />
     </template>
   </svg>
 </template>
