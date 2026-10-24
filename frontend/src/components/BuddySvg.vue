@@ -3,9 +3,10 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-  mood:    { type: String, default: 'idle' }, // idle | shy | happy | excited
-  size:    { type: Number, default: 120 },
-  variant: { type: String, default: 'sojo' }, // sojo | jungja | heomi | indo
+  mood:    { type: String,  default: 'idle' }, // idle | shy | happy | excited
+  size:    { type: Number,  default: 120 },
+  variant: { type: String,  default: 'sojo' }, // sojo | jungja | heomi | indo
+  awoken:  { type: Boolean, default: false },   // 각성 상태: 왕관 + 추가 이펙트
 })
 
 const palette = {
@@ -97,6 +98,15 @@ const c = computed(() => palette[props.variant] ?? palette.sojo)
     <!-- 안테나 -->
     <line x1="60" y1="27" x2="60" y2="42"
       :stroke="c.glow" stroke-width="2.5" stroke-linecap="round" />
+    <!-- 각성 왕관 -->
+    <template v-if="awoken">
+      <polygon points="60,4 64,13 74,11 67,18 70,28 60,22 50,28 53,18 46,11 56,13"
+        fill="#FFD700" opacity="0.95" />
+      <circle cx="60" cy="4"  r="2.5" fill="white" opacity="0.9" />
+      <circle cx="74" cy="11" r="1.8" fill="white" opacity="0.9" />
+      <circle cx="46" cy="11" r="1.8" fill="white" opacity="0.9" />
+    </template>
+
     <!-- 안테나 별 -->
     <circle cx="60" cy="22" r="8" :fill="c.tip" class="antenna-star" />
     <circle cx="60" cy="22" r="5" fill="#FFE19A" />

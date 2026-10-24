@@ -19,6 +19,13 @@ const defaultState = () => ({
     heomi:  { owned: false, level: 1, xp: 0 },
     indo:   { owned: false, level: 1, xp: 0 },
   },
+  // QR 체크인 (현장 방문 인증)
+  checkIns: {
+    sojedom: false,
+    jungang: false,
+    heredi:  false,
+    indong:  false,
+  },
   // persisted mid-mission state
   activeMission: null, // { locationId } | null
   lastReward: null,    // { buddyId, xpGained, shardsGained, leveledUp }
@@ -29,14 +36,14 @@ function loadSave() {
     const raw = localStorage.getItem(SAVE_KEY)
     if (raw) {
       const parsed = JSON.parse(raw)
-      // deep merge to handle new keys added after old save
       const base = defaultState()
       return {
         ...base,
         ...parsed,
-        player: { ...base.player, ...parsed.player },
+        player:    { ...base.player,    ...parsed.player },
         locations: { ...base.locations, ...parsed.locations },
-        buddies: { ...base.buddies, ...parsed.buddies },
+        buddies:   { ...base.buddies,   ...parsed.buddies },
+        checkIns:  { ...base.checkIns,  ...parsed.checkIns },
       }
     }
   } catch {}
@@ -98,6 +105,16 @@ export function completeMission(locationId, buddyId) {
   if (locationId === 'heredi')  game.locations.indong.status = 'available'
 
   game.lastReward = { buddyId, xpGained, shardsGained, leveledUp }
+}
+
+export function checkInLocation(locationId) {
+  if (game.checkIns[locationId] !== undefined) {
+    game.checkIns[locationId] = true
+    // 미션 미완료라면 자동으로 in_progress로 전환
+    if (game.locations[locationId]?.status === 'available') {
+      game.locations[locationId].status = 'in_progress'
+    }
+  }
 }
 
 export function addBuddyXp(buddyId, amount) {

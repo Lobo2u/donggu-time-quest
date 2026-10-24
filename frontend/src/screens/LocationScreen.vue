@@ -179,6 +179,30 @@ onMounted(() => {
       </div>
     </div>
 
+    <!-- QR 체크인 배너 -->
+    <div class="qr-checkin-card" v-if="!alreadyComplete">
+      <div class="qr-checkin-left">
+        <span class="msr" style="font-size:28px; color:var(--orange)">qr_code_scanner</span>
+        <div>
+          <p class="qr-checkin-title" v-if="game.checkIns?.[locationId]">
+            <span class="msr" style="font-size:16px; color:var(--teal)">check_circle</span>
+            현장 QR 인증 완료!
+          </p>
+          <p class="qr-checkin-title" v-else>현장 QR 인증 시 버디 각성</p>
+          <p class="qr-checkin-desc" v-if="!game.checkIns?.[locationId]">
+            장소에 부착된 QR을 스캔하면 {{ loc.name }}의 시간 친구가 각성해요
+          </p>
+          <p class="qr-checkin-desc" v-else>버디 능력이 강화됐어요</p>
+        </div>
+      </div>
+      <button
+        v-if="!game.checkIns?.[locationId]"
+        class="qr-scan-btn"
+        @click="$router.push('/qrscan?from=' + locationId)"
+      >스캔</button>
+      <div v-else class="awoken-pill">각성됨</div>
+    </div>
+
     <!-- 실제 장소 안내 -->
     <div class="real-note-card">
       <span class="msr" style="font-size:16px; color:var(--teal-dark)">info</span>
@@ -269,6 +293,26 @@ onMounted(() => {
   display: flex; flex-direction: column; align-items: center;
   gap: 8px; background: var(--sky); border-radius: 22px; padding: 24px;
   font-size: 15px; font-weight: 800; color: var(--ink); text-align: center;
+}
+
+.qr-checkin-card {
+  margin: 0 16px;
+  background: linear-gradient(135deg, #08233F, #0E4A4A);
+  border: 1px solid var(--orange);
+  border-radius: 18px; padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+}
+.qr-checkin-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.qr-checkin-title { font-size: 14px; font-weight: 900; color: var(--white); display: flex; align-items: center; gap: 4px; }
+.qr-checkin-desc  { font-size: 11px; font-weight: 700; color: #9FC1C8; margin-top: 3px; word-break: keep-all; line-height: 1.4; }
+.qr-scan-btn {
+  background: var(--orange); border: none; border-radius: 12px;
+  padding: 8px 16px; font-family: var(--font); font-size: 13px; font-weight: 900;
+  color: var(--navy); cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+.awoken-pill {
+  background: var(--teal); color: white; border-radius: 12px;
+  padding: 6px 12px; font-size: 12px; font-weight: 900; white-space: nowrap; flex-shrink: 0;
 }
 
 .real-note-card {
