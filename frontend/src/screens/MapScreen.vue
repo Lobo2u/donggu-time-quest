@@ -248,6 +248,12 @@ onBeforeUnmount(() => {
       <button class="map-ctrl-btn" title="도감" @click="$router.push('/collection')">
         <span class="msr" style="font-size:22px; color:var(--navy)">auto_stories</span>
       </button>
+      <button class="map-ctrl-btn" title="운영 현황" @click="$router.push('/dashboard')">
+        <span class="msr" style="font-size:22px; color:var(--navy)">insights</span>
+      </button>
+      <button class="map-ctrl-btn" title="QR 발급" @click="$router.push('/qr-admin')">
+        <span class="msr" style="font-size:22px; color:var(--navy)">qr_code_2</span>
+      </button>
       <button class="map-ctrl-btn" title="초기화" @click="resetGame(); $router.replace('/')">
         <span class="msr" style="font-size:22px; color:var(--navy)">refresh</span>
       </button>

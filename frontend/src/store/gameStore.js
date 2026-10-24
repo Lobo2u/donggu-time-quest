@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { track } from './statsStore.js'
 
 const SAVE_KEY = 'donggu-tq-v1'
 
@@ -69,11 +70,13 @@ export function initPlayer(guide) {
 
 export function markArrived(locationId) {
   if (game.locations[locationId]) {
+    const firstArrival = !game.locations[locationId].arrivedOnce
     game.locations[locationId].arrivedOnce = true
     if (game.locations[locationId].status === 'available') {
       game.locations[locationId].status = 'in_progress'
     }
     game.activeMission = { locationId }
+    if (firstArrival) track('visit', locationId)
   }
 }
 
@@ -105,15 +108,18 @@ export function completeMission(locationId, buddyId) {
   if (locationId === 'heredi')  game.locations.indong.status = 'available'
 
   game.lastReward = { buddyId, xpGained, shardsGained, leveledUp }
+  track('collect', locationId)
 }
 
 export function checkInLocation(locationId) {
   if (game.checkIns[locationId] !== undefined) {
+    const firstCheckIn = !game.checkIns[locationId]
     game.checkIns[locationId] = true
     // 미션 미완료라면 자동으로 in_progress로 전환
     if (game.locations[locationId]?.status === 'available') {
       game.locations[locationId].status = 'in_progress'
     }
+    if (firstCheckIn) track('awaken', locationId)
   }
 }
 
