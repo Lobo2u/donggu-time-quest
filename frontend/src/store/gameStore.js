@@ -27,6 +27,8 @@ const defaultState = () => ({
     heredi:  false,
     indong:  false,
   },
+  // 일일 탐험 보너스
+  dailyBonus: { lastClaim: 0, streak: 0 },
   // persisted mid-mission state
   activeMission: null, // { locationId } | null
   lastReward: null,    // { buddyId, xpGained, shardsGained, leveledUp }
@@ -41,10 +43,11 @@ function loadSave() {
       return {
         ...base,
         ...parsed,
-        player:    { ...base.player,    ...parsed.player },
-        locations: { ...base.locations, ...parsed.locations },
-        buddies:   { ...base.buddies,   ...parsed.buddies },
-        checkIns:  { ...base.checkIns,  ...parsed.checkIns },
+        player:     { ...base.player,     ...parsed.player },
+        locations:  { ...base.locations,  ...parsed.locations },
+        buddies:    { ...base.buddies,    ...parsed.buddies },
+        checkIns:   { ...base.checkIns,   ...parsed.checkIns },
+        dailyBonus: { ...base.dailyBonus, ...parsed.dailyBonus },
       }
     }
   } catch {}
@@ -90,6 +93,9 @@ export function completeMission(locationId, buddyId) {
   game.buddies[buddyId].owned = true
   game.activeMission = null
 
+  // 새 동료 유대 경험치
+  addBuddyXp(buddyId, 40)
+
   // XP + shards
   const xpGained = 50
   const shardsGained = 1
@@ -125,9 +131,51 @@ export function checkInLocation(locationId) {
 
 export function addBuddyXp(buddyId, amount) {
   const b = game.buddies[buddyId]
-  if (!b || !b.owned) return
+  if (!b) return
+  b.owned = true
   b.xp += amount
-  if (b.xp >= 100) { b.level += 1; b.xp -= 100 }
+  while (b.xp >= 100) { b.level += 1; b.xp -= 100 }
+}
+
+// ── 일일 탐험 보너스 ──────────────────────────────────────────────────────────
+function startOfDay(ts) { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime() }
+
+export function canClaimDaily() {
+  return startOfDay(game.dailyBonus?.lastClaim ?? 0) < startOfDay(Date.now())
+}
+
+export function claimDaily() {
+  if (!canClaimDaily()) return null
+  const prev = game.dailyBonus.lastClaim
+  const yesterday = startOfDay(Date.now()) - 86400000
+  const streak = startOfDay(prev) === yesterday ? (game.dailyBonus.streak + 1) : 1
+  game.dailyBonus = { lastClaim: Date.now(), streak }
+  const reward = 1 + Math.min(streak - 1, 4) // 연속 출석 1~5 조각
+  game.player.shards += reward
+  return { reward, streak }
+}
+
+// ── 버디 능력 강도 (레벨 + 각성) ──────────────────────────────────────────────
+// 미션에서 실제로 적용되는 힌트/공개 개수를 반환 (1~3)
+const BUDDY_LOCATION = { sojo: 'sojedom', jungja: 'jungang', heomi: 'heredi', indo: 'indong' }
+
+export function isBuddyAwoken(buddyId) {
+  return !!game.checkIns?.[BUDDY_LOCATION[buddyId]]
+}
+
+export function abilityPower(buddyId) {
+  const b = game.buddies[buddyId]
+  if (!b || !b.owned) return 0
+  let power = 1
+  if (b.level >= 3) power += 1        // 버디 레벨 3 이상
+  if (isBuddyAwoken(buddyId)) power += 1  // 현장 각성
+  return Math.min(power, 3)
+}
+
+// 미션 재도전 보상 (중복 조각 없음, 버디 유대 경험치만)
+export function replayReward(buddyId) {
+  addBuddyXp(buddyId, 25)
+  return { xp: 25 }
 }
 
 export function resetGame() {

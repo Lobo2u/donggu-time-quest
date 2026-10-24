@@ -5,7 +5,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
-import { game, resetGame } from '../store/gameStore.js'
+import { game, resetGame, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
 
 const router = useRouter()
@@ -193,6 +193,14 @@ function goExplore() {
   router.push(`/location/${selected.value.id}`)
 }
 
+// 일일 보너스
+const showDaily = ref(canClaimDaily())
+const dailyResult = ref(null)
+function claimDailyBonus() {
+  const r = claimDaily()
+  if (r) { dailyResult.value = r; showDaily.value = false }
+}
+
 // ── 반응형 마커 업데이트 ──────────────────────────────────────────────────────
 watch(
   () => locationList.map(l => `${locStatus(l.id)}-${isAwoken(l.id)}`).join(),
@@ -278,8 +286,31 @@ onBeforeUnmount(() => {
       <div class="pin-item"><span class="pin-dot" style="background:#8EA4AF"></span><span>잠김</span></div>
     </div>
 
+    <!-- 일일 탐험 보너스 -->
+    <button v-if="showDaily && !selected" class="daily-bonus" @click="claimDailyBonus">
+      <span class="msr daily-gift" style="font-size:26px; color:var(--orange)">redeem</span>
+      <div class="daily-text">
+        <span class="daily-title">오늘의 탐험 보너스</span>
+        <span class="daily-sub">눌러서 시간 조각 받기</span>
+      </div>
+      <span class="msr" style="font-size:20px; color:var(--orange)">chevron_right</span>
+    </button>
+
+    <!-- 일일 보너스 수령 결과 -->
+    <Transition name="pop">
+      <div v-if="dailyResult" class="daily-result" @click="dailyResult = null">
+        <div class="daily-result-card">
+          <span class="msr" style="font-size:44px; color:var(--orange)">diamond</span>
+          <p class="dr-title">+{{ dailyResult.reward }} 시간 조각</p>
+          <p class="dr-streak">{{ dailyResult.streak }}일 연속 탐험 중! 🔥</p>
+          <p class="dr-hint">연속 출석할수록 보너스가 커져요 (최대 +5)</p>
+          <button class="dr-btn" @click.stop="dailyResult = null">확인</button>
+        </div>
+      </div>
+    </Transition>
+
     <!-- 가이드 말풍선 -->
-    <div class="compact-guide" v-if="!selected">
+    <div class="compact-guide" v-if="!selected && !showDaily">
       <div class="guide-char">
         <BuddySvg :variant="game.guide === 'jungang' ? 'jungang' : 'majung'" mood="happy" :size="48" />
       </div>
@@ -429,6 +460,43 @@ onBeforeUnmount(() => {
 .guide-line { font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.4; word-break: keep-all; }
 
 .nav-wrap { position: absolute; left: 16px; top: 754px; z-index: 10; }
+
+/* 일일 보너스 */
+.daily-bonus {
+  position: absolute; left: 16px; top: 642px; width: 285px; z-index: 10;
+  background: linear-gradient(135deg, #FFF3D6, #FFE0A3);
+  border: 2px solid var(--orange); border-radius: 20px;
+  box-shadow: 0 5px 16px #FF9F1C44;
+  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+  cursor: pointer; font-family: var(--font);
+}
+.daily-gift { animation: gift-shake 1.5s ease-in-out infinite; }
+@keyframes gift-shake {
+  0%, 60%, 100% { transform: rotate(0); }
+  70% { transform: rotate(-10deg); } 80% { transform: rotate(10deg); } 90% { transform: rotate(-6deg); }
+}
+.daily-text { flex: 1; display: flex; flex-direction: column; gap: 1px; text-align: left; }
+.daily-title { font-size: 13px; font-weight: 900; color: var(--navy); }
+.daily-sub { font-size: 11px; font-weight: 700; color: #9C5B1E; }
+
+.daily-result {
+  position: absolute; inset: 0; z-index: 50; background: #08233Fcc;
+  display: flex; align-items: center; justify-content: center;
+}
+.daily-result-card {
+  background: white; border-radius: 24px; padding: 28px 24px; width: 280px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center;
+}
+.dr-title { font-size: 24px; font-weight: 900; color: var(--ink); }
+.dr-streak { font-size: 15px; font-weight: 800; color: var(--orange); }
+.dr-hint { font-size: 11px; font-weight: 600; color: var(--muted); margin-top: 4px; word-break: keep-all; }
+.dr-btn {
+  margin-top: 14px; width: 100%; background: var(--orange); color: var(--navy);
+  border: none; border-radius: 14px; padding: 12px; font-family: var(--font);
+  font-size: 15px; font-weight: 800; cursor: pointer;
+}
+.pop-enter-active { transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+.pop-enter-from { transform: scale(0.7); opacity: 0; }
 
 .bottom-sheet {
   position: absolute; left: 16px; bottom: 10px; width: 358px; z-index: 20;

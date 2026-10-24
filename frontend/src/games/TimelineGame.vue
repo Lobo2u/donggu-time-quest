@@ -1,9 +1,13 @@
 <!-- 인동시장: 타임라인 순서 복원 게임 -->
 <script setup>
 import { ref, computed } from 'vue'
+import { abilityPower } from '../store/gameStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
+
+// 인도 능력 강도 (앞에서 N개 사건 순서 공개)
+const hintCount = computed(() => Math.max(1, abilityPower('indo')))
 
 // 섞인 이벤트 카드
 const shuffled = ref([...props.mission.events].sort(() => Math.random() - 0.5))
@@ -14,7 +18,7 @@ const resultCorrect = ref([]) // 맞은 id 목록
 const resultWrong   = ref([]) // 틀린 id 목록
 const attempts = ref(0)
 const hintUsed = ref(false)
-const hintId = ref(null)
+const hintIds = ref([])  // [{ id, pos }]
 
 const isChosen = id => playerOrder.value.includes(id)
 const chosenNum = id => {
@@ -56,7 +60,7 @@ function resetRound() {
   playerOrder.value = []
   resultCorrect.value = []
   resultWrong.value = []
-  hintId.value = null
+  hintIds.value = []
   shuffled.value = [...props.mission.events].sort(() => Math.random() - 0.5)
   phase.value = 'choose'
 }
@@ -64,10 +68,12 @@ function resetRound() {
 function useHint() {
   if (hintUsed.value || phase.value !== 'choose') return
   hintUsed.value = true
-  const firstEvent = [...props.mission.events].sort((a,b)=>a.order-b.order)[0]
-  hintId.value = firstEvent.id
-  setTimeout(() => { hintId.value = null }, 2000)
+  const sorted = [...props.mission.events].sort((a, b) => a.order - b.order)
+  hintIds.value = sorted.slice(0, hintCount.value).map((e, i) => ({ id: e.id, pos: i + 1 }))
+  setTimeout(() => { hintIds.value = [] }, 2500)
 }
+
+const hintedId = id => hintIds.value.some(h => h.id === id)
 
 const correctOrder = computed(() =>
   [...props.mission.events].sort((a,b) => a.order - b.order)
@@ -86,9 +92,9 @@ const correctOrder = computed(() =>
     </div>
 
     <!-- 정답 힌트 표시 (hint used) -->
-    <div class="hint-banner" v-if="hintId">
+    <div class="hint-banner" v-if="hintIds.length">
       <span class="msr" style="font-size:16px; color:var(--orange)">star</span>
-      <span>"{{ props.mission.events.find(e=>e.id===hintId)?.label }}"이 첫 번째예요!</span>
+      <span>{{ hintIds.map(h => `${h.pos}. ${props.mission.events.find(e=>e.id===h.id)?.label}`).join(' → ') }}</span>
     </div>
 
     <!-- 선택 진행 -->
@@ -107,7 +113,7 @@ const correctOrder = computed(() =>
           chosen:   isChosen(event.id) && phase === 'choose',
           correct:  resultCorrect.includes(event.id),
           wrong:    resultWrong.includes(event.id),
-          hinted:   event.id === hintId,
+          hinted:   hintedId(event.id),
         }"
         @click="choose(event)"
       >
@@ -147,7 +153,7 @@ const correctOrder = computed(() =>
     <!-- 인도 능력 버튼 -->
     <button class="hint-btn" :disabled="hintUsed || phase !== 'choose'" @click="useHint">
       <span class="msr" style="font-size:16px">auto_fix_high</span>
-      {{ hintUsed ? '힌트 사용됨' : '인도의 능력: 첫 번째 사건 힌트' }}
+      {{ hintUsed ? '힌트 사용됨' : `인도의 능력: 앞 ${hintCount}개 사건 힌트` }}
     </button>
   </div>
 </template>

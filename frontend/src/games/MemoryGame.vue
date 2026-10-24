@@ -1,10 +1,13 @@
 <!-- 소제동: 카드 뒤집기 기억 맞추기 -->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { game } from '../store/gameStore.js'
+import { game, abilityPower } from '../store/gameStore.js'
 
 const props = defineProps({ mission: Object })
 const emit  = defineEmits(['win'])
+
+// 소조 능력 강도 (레벨/각성에 따라 공개 카드 수 1~3)
+const revealCount = computed(() => Math.max(1, abilityPower('sojo')))
 
 function shuffle(arr) {
   const a = [...arr]
@@ -68,9 +71,11 @@ function useBuddyAbility() {
   const hidden = deck.value.filter(c => c.state === 'hidden')
   if (!hidden.length) return
   hintUsed.value = true
-  const target = hidden[Math.floor(Math.random() * hidden.length)]
-  target.state = 'hint'
-  setTimeout(() => { if (target.state === 'hint') target.state = 'hidden' }, 1800)
+  // 능력 강도만큼 카드 공개 (레벨/각성 시 더 많이)
+  const shuffled = [...hidden].sort(() => Math.random() - 0.5)
+  const targets = shuffled.slice(0, revealCount.value)
+  targets.forEach(t => { t.state = 'hint' })
+  setTimeout(() => { targets.forEach(t => { if (t.state === 'hint') t.state = 'hidden' }) }, 1800)
 }
 
 function cardClass(c) {
@@ -115,7 +120,7 @@ function cardClass(c) {
       <span class="msr" style="font-size:18px">auto_fix_high</span>
       <div>
         <p class="ab-name">소조의 능력 · 기억 현상</p>
-        <p class="ab-desc">{{ hintUsed ? '이미 사용했어요' : '카드 하나를 잠깐 공개해요 (1회)' }}</p>
+        <p class="ab-desc">{{ hintUsed ? '이미 사용했어요' : `카드 ${revealCount}장을 잠깐 공개해요 (1회)` }}</p>
       </div>
     </button>
 

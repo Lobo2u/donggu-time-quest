@@ -1,9 +1,13 @@
 <!-- 중앙시장: 순서 기억 게임 -->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { abilityPower } from '../store/gameStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
+
+// 중앙이 능력 강도 (첫 N개 아이템 힌트)
+const hintCount = computed(() => Math.max(1, abilityPower('jungja')))
 
 const PHASES = { memorize: 'memorize', recall: 'recall', result: 'result' }
 const phase = ref(PHASES.memorize)
@@ -80,16 +84,14 @@ function checkResult() {
   }
 }
 
-// 힌트: 첫 번째 아이템 하이라이트 1.5초
+// 힌트: 앞에서 N개 아이템 하이라이트 (능력 강도)
 function useHint() {
   if (hintUsed.value || phase.value !== PHASES.recall) return
   hintUsed.value = true
-  const firstId = correctOrder[0]
-  const item = displayItems.value.find(i => i.id === firstId)
-  if (item) {
-    item._hinted = true
-    setTimeout(() => { item._hinted = false }, 1500)
-  }
+  const ids = correctOrder.slice(0, hintCount.value)
+  const items = ids.map(id => displayItems.value.find(i => i.id === id)).filter(Boolean)
+  items.forEach(it => { it._hinted = true })
+  setTimeout(() => { items.forEach(it => { it._hinted = false }) }, 1500)
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -150,7 +152,7 @@ onMounted(showSequence)
           {{ playerChoiceNum(item) }}
         </div>
         <!-- 힌트 표시 -->
-        <div v-else-if="item._hinted" class="hint-indicator">1번!</div>
+        <div v-else-if="item._hinted" class="hint-indicator">{{ correctOrder.indexOf(item.id) + 1 }}번!</div>
 
         <span class="msr item-icon" :style="{ color: isHighlighted(item) ? item.color : '#7E8E8E', fontSize: '36px' }">
           {{ item.icon }}
@@ -162,7 +164,7 @@ onMounted(showSequence)
     <!-- 힌트 버튼 -->
     <button class="hint-btn" :disabled="hintUsed || phase !== 'recall'" @click="useHint">
       <span class="msr" style="font-size:16px">auto_fix_high</span>
-      {{ hintUsed ? '힌트 사용됨' : '중앙이의 능력: 첫 번째 물건 힌트' }}
+      {{ hintUsed ? '힌트 사용됨' : `중앙이의 능력: 앞 ${hintCount}개 물건 힌트` }}
     </button>
 
     <p class="attempt-count">시도 {{ attempts }}회</p>

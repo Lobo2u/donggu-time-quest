@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { game } from '../store/gameStore.js'
+import { game, replayReward } from '../store/gameStore.js'
 import { LOCATIONS, MISSIONS, BUDDIES } from '../data/gameData.js'
 
 // 게임 타입별 컴포넌트
@@ -30,11 +30,19 @@ const gameComponents = {
 }
 const GameComponent = computed(() => gameComponents[mission?.type])
 
+const isReplay = computed(() => route.query.replay === '1')
 const won = ref(false)
+const replayXp = ref(0)
 
 function onWin() {
   won.value = true
-  setTimeout(() => router.push(`/meet/${loc.buddyId}`), 1600)
+  if (isReplay.value) {
+    const r = replayReward(loc.buddyId)
+    replayXp.value = r.xp
+    setTimeout(() => router.push(`/buddy/${loc.buddyId}`), 2000)
+  } else {
+    setTimeout(() => router.push(`/meet/${loc.buddyId}`), 1600)
+  }
 }
 </script>
 
@@ -46,21 +54,30 @@ function onWin() {
         <span class="msr" style="font-size:24px; color:var(--navy)">arrow_back</span>
       </button>
       <div class="header-texts">
-        <span class="header-sub">{{ loc.name }} · 미션</span>
+        <span class="header-sub">{{ loc.name }} · {{ isReplay ? '재도전 (유대 성장)' : '미션' }}</span>
         <span class="header-title">{{ mission.title }}</span>
       </div>
     </div>
 
     <!-- 미션 안내 -->
-    <div class="mission-intro">{{ mission.intro }}</div>
+    <div class="mission-intro">
+      <span v-if="isReplay">{{ buddy?.name }}와(과) 다시 도전해 유대를 쌓아요. (조각 중복 보상 없음)</span>
+      <span v-else>{{ mission.intro }}</span>
+    </div>
 
     <!-- 승리 오버레이 -->
     <Transition name="win-pop">
       <div class="win-overlay" v-if="won">
         <div class="win-box">
           <div class="win-stars">✨ ✨ ✨</div>
-          <p class="win-title">미션 완료!</p>
-          <p class="win-sub">시간 친구가 나타나고 있어요…</p>
+          <template v-if="isReplay">
+            <p class="win-title">유대 +{{ replayXp }} XP</p>
+            <p class="win-sub">{{ buddy?.name }}와(과) 더 가까워졌어요!</p>
+          </template>
+          <template v-else>
+            <p class="win-title">미션 완료!</p>
+            <p class="win-sub">시간 친구가 나타나고 있어요…</p>
+          </template>
         </div>
       </div>
     </Transition>
