@@ -134,6 +134,8 @@ const completedCount = computed(() =>
       <div class="marker-status" v-if="canSelect(loc.id)">
         {{ statusLabel(loc.id) }}
       </div>
+      <!-- 각성 완료 표시 -->
+      <div class="awoken-star" v-if="game.checkIns?.[loc.id]">⭐</div>
     </div>
 
     <!-- 플레이어 아바타 -->
@@ -301,6 +303,9 @@ const completedCount = computed(() =>
 .marker-status {
   font-size: 9px; font-weight: 700; color: var(--navy);
   background: #FFFFFFCC; border-radius: 6px; padding: 2px 6px;
+}
+.awoken-star {
+  font-size: 14px; line-height: 1; filter: drop-shadow(0 0 4px #FFD700);
 }
 
 .player-avatar {

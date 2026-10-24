@@ -1,5 +1,8 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import WelcomeScreen    from '../screens/WelcomeScreen.vue'
+import WelcomeScreen     from '../screens/WelcomeScreen.vue'
+import QrScanScreen     from '../screens/QrScanScreen.vue'
+import AwakeningScreen  from '../screens/AwakeningScreen.vue'
+import ShareCardScreen  from '../screens/ShareCardScreen.vue'
 import MapScreen        from '../screens/MapScreen.vue'
 import LocationScreen   from '../screens/LocationScreen.vue'
 import MiniGameScreen   from '../screens/MiniGameScreen.vue'
@@ -23,5 +26,8 @@ export default createRouter({
     { path: '/buddy/:id',             component: BuddyDetailScreen },
     { path: '/record',                component: RecordScreen },
     { path: '/ending',                component: EndingScreen },
+    { path: '/qrscan',               component: QrScanScreen },
+    { path: '/awakening/:buddyId',   component: AwakeningScreen },
+    { path: '/share/:buddyId',       component: ShareCardScreen },
   ],
 })
