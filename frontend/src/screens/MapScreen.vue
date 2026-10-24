@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import BottomNavigation from '../components/BottomNavigation.vue'
+import BuddySvg from '../components/BuddySvg.vue'
 import { game, resetGame } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
 
@@ -251,7 +252,9 @@ onBeforeUnmount(() => {
 
     <!-- 가이드 말풍선 -->
     <div class="compact-guide" v-if="!selected">
-      <div class="guide-char">{{ game.guide === 'jungang' ? '🏪' : '🐧' }}</div>
+      <div class="guide-char">
+        <BuddySvg :variant="game.guide === 'jungang' ? 'jungang' : 'majung'" mood="happy" :size="48" />
+      </div>
       <div class="guide-text">
         <span class="guide-name">{{ guideName }}의 탐험 제안</span>
         <span class="guide-line">{{ guideMsg }}</span>
@@ -392,7 +395,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 5px 16px #062B4033;
   display: flex; gap: 10px; padding: 10px 12px; align-items: center;
 }
-.guide-char { font-size: 44px; line-height: 1; flex-shrink: 0; }
+.guide-char { flex-shrink: 0; display: flex; align-items: center; justify-content: center; width: 50px; }
 .guide-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .guide-name { font-size: 11px; font-weight: 800; color: var(--teal); }
 .guide-line { font-size: 13px; font-weight: 700; color: var(--ink); line-height: 1.4; word-break: keep-all; }

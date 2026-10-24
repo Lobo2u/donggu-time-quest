@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import BuddySvg from '../components/BuddySvg.vue'
 const router = useRouter()
 </script>
 
@@ -36,8 +37,8 @@ const router = useRouter()
 
     <!-- Characters -->
     <div class="ending-chars">
-      <div class="ending-char-majung">🐧</div>
-      <div class="ending-char-jungang">🏪</div>
+      <div class="ending-char-majung"><BuddySvg variant="majung" mood="happy" :size="76" /></div>
+      <div class="ending-char-jungang"><BuddySvg variant="jungang" mood="happy" :size="76" /></div>
     </div>
 
     <!-- Character note -->
@@ -179,16 +180,11 @@ const router = useRouter()
 
 .ending-char-majung,
 .ending-char-jungang {
-  width: 72px; height: 72px;
-  border-radius: 16px;
+  width: 80px; height: 92px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 40px;
 }
-
-.ending-char-majung { background: linear-gradient(135deg, #7CE8D5, #4CB5AB); }
-.ending-char-jungang { background: linear-gradient(135deg, #FFDDA0, #FFA940); }
 
 .char-note {
   position: absolute;

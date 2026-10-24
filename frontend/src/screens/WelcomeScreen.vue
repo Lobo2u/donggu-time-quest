@@ -41,15 +41,15 @@ if (game.initialized) {
     <h1 class="game-title">동구<br>TIME QUEST</h1>
     <p class="game-slogan">이름을 잃은 지도, 첫 기억을 찾아라</p>
 
-    <!-- 캐릭터 일러스트 -->
+    <!-- 가이드 마스코트 (마중이 · 중앙이) -->
     <div class="char-area">
       <div class="char-box char-majung">
-        <BuddySvg mood="happy" :size="90" />
-        <span class="char-name">소조</span>
+        <BuddySvg variant="majung" mood="happy" :size="86" />
+        <span class="char-name">마중이</span>
       </div>
       <div class="char-box char-jungang">
-        <div class="char-question">?</div>
-        <span class="char-name">???</span>
+        <BuddySvg variant="jungang" mood="happy" :size="86" />
+        <span class="char-name">중앙이</span>
       </div>
     </div>
 
