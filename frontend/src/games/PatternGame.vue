@@ -1,9 +1,13 @@
 <!-- 한의약거리: 빛의 패턴 기억 게임 -->
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { abilityPower } from '../store/gameStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
+
+// 헤미 능력 강도 (힌트 칸 수)
+const hintCount = computed(() => Math.max(1, abilityPower('heomi')))
 
 const { gridSize, targetCount, rounds, showTime } = props.mission
 const totalCells = gridSize * gridSize
@@ -16,7 +20,7 @@ const showingPattern = ref(false)
 const wrongCells = ref([])
 const correctCells = ref([])
 const roundsWon = ref(0)
-const hintCell = ref(null)
+const hintCells = ref([])
 const hintUsed = ref(false)
 const attempts = ref(0)
 
@@ -34,7 +38,7 @@ async function startRound() {
   playerPattern.value = []
   wrongCells.value = []
   correctCells.value = []
-  hintCell.value = null
+  hintCells.value = []
   phase.value = 'memorize'
   showingPattern.value = true
   await delay(showTime)
@@ -48,7 +52,7 @@ function cellActive(idx) {
 function cellSelected(idx) { return playerPattern.value.includes(idx) }
 function cellWrong(idx)    { return wrongCells.value.includes(idx) }
 function cellCorrect(idx)  { return correctCells.value.includes(idx) }
-function cellHinted(idx)   { return hintCell.value === idx }
+function cellHinted(idx)   { return hintCells.value.includes(idx) }
 
 function tapCell(idx) {
   if (phase.value !== 'recall') return
@@ -93,9 +97,9 @@ function useHint() {
   hintUsed.value = true
   const notYetSelected = correctPattern.value.filter(c => !playerPattern.value.includes(c))
   if (!notYetSelected.length) return
-  const pick = notYetSelected[Math.floor(Math.random() * notYetSelected.length)]
-  hintCell.value = pick
-  setTimeout(() => { hintCell.value = null }, 1600)
+  const shuffled = [...notYetSelected].sort(() => Math.random() - 0.5)
+  hintCells.value = shuffled.slice(0, hintCount.value)
+  setTimeout(() => { hintCells.value = [] }, 1600)
 }
 
 function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
@@ -154,7 +158,7 @@ onMounted(startRound)
     <!-- 힌트 버튼 -->
     <button class="hint-btn" :disabled="hintUsed || phase !== 'recall'" @click="useHint">
       <span class="msr" style="font-size:16px">auto_fix_high</span>
-      {{ hintUsed ? '힌트 사용됨' : '헤미의 능력: 칸 하나 힌트' }}
+      {{ hintUsed ? '힌트 사용됨' : `헤미의 능력: 칸 ${hintCount}개 힌트` }}
     </button>
 
     <p class="attempt-count">시도 {{ attempts }}회 · {{ roundsWon }} / {{ rounds }} 라운드 완료</p>

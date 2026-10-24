@@ -1,6 +1,7 @@
 <script setup>
+import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { game } from '../store/gameStore.js'
+import { game, abilityPower, isBuddyAwoken } from '../store/gameStore.js'
 import { BUDDIES, LOCATIONS } from '../data/gameData.js'
 import BuddySvg from '../components/BuddySvg.vue'
 
@@ -13,7 +14,18 @@ const save = game.buddies[buddyId]
 if (!buddy || !save?.owned) router.replace('/collection')
 
 const locationId = Object.values(LOCATIONS).find(l => l.buddyId === buddyId)?.id
-const xpPercent = (save?.xp ?? 0) + '%'
+const awoken = computed(() => isBuddyAwoken(buddyId))
+const power = computed(() => abilityPower(buddyId))
+// 다음 레벨/각성 강화 조건 안내
+const nextBoost = computed(() => {
+  if (save.level < 3) return `Lv.3 달성 시 능력 강화 (현재 Lv.${save.level})`
+  if (!awoken.value) return '현장 QR 각성 시 능력 강화'
+  return '최대 강화 상태예요!'
+})
+
+function replay() {
+  if (locationId) router.push(`/minigame/${locationId}?replay=1`)
+}
 </script>
 
 <template>
@@ -71,12 +83,16 @@ const xpPercent = (save?.xp ?? 0) + '%'
           <p class="ability-name">{{ buddy.ability.name }}</p>
           <p class="ability-sub">고유 능력</p>
         </div>
-        <div class="ability-ready">사용 가능</div>
+        <div class="ability-ready">강도 {{ power }}</div>
       </div>
       <p class="ability-desc">{{ buddy.ability.description }}</p>
+      <!-- 능력 강도 게이지 -->
+      <div class="power-gauge">
+        <div v-for="n in 3" :key="n" class="power-pip" :class="{ on: n <= power }"></div>
+      </div>
       <div class="ability-use-note">
-        <span class="msr" style="font-size:14px; color:var(--teal)">info</span>
-        <span>기억 맞추기 미션에서 카드 하나를 잠깐 공개해요. 미션 중 자동으로 사용 버튼이 나타나요.</span>
+        <span class="msr" style="font-size:14px; color:var(--teal)">trending_up</span>
+        <span>{{ nextBoost }}</span>
       </div>
     </div>
 
@@ -89,11 +105,17 @@ const xpPercent = (save?.xp ?? 0) + '%'
       </div>
     </div>
 
-    <!-- 버디와 대화 버튼 -->
-    <button class="chat-cta" @click="$router.push(`/chat/${buddyId}`)">
-      <span class="msr" style="font-size:22px; color:var(--navy)">chat</span>
-      {{ buddy.name }}와 대화하기
-    </button>
+    <!-- 액션 버튼 -->
+    <div class="detail-actions">
+      <button class="chat-cta" @click="$router.push(`/chat/${buddyId}`)">
+        <span class="msr" style="font-size:20px; color:var(--navy)">chat</span>
+        대화하기
+      </button>
+      <button class="replay-cta" @click="replay">
+        <span class="msr" style="font-size:20px; color:var(--teal-dark)">replay</span>
+        재도전 · 유대 성장
+      </button>
+    </div>
 
     <div style="height: 20px"></div>
   </div>
@@ -170,18 +192,26 @@ const xpPercent = (save?.xp ?? 0) + '%'
   border-radius: 10px; padding: 4px 10px; font-size: 11px; font-weight: 900;
 }
 .ability-desc { font-size: 13px; font-weight: 700; color: var(--ink); }
+.power-gauge { display: flex; gap: 6px; }
+.power-pip { flex: 1; height: 8px; border-radius: 4px; background: #E8EDED; transition: background 0.3s; }
+.power-pip.on { background: var(--orange); }
 .ability-use-note {
   display: flex; align-items: flex-start; gap: 6px;
   background: var(--sky); border-radius: 12px; padding: 8px 10px;
   font-size: 11px; font-weight: 700; color: var(--ink); line-height: 1.4; word-break: keep-all;
 }
 
+.detail-actions { margin: 4px 16px 0; display: flex; gap: 8px; }
 .chat-cta {
-  margin: 4px 16px 0;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  height: 54px; background: var(--orange); border: none; border-radius: 18px;
-  font-family: var(--font); font-size: 16px; font-weight: 800; color: var(--navy);
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 52px; background: var(--orange); border: none; border-radius: 16px;
+  font-family: var(--font); font-size: 14px; font-weight: 800; color: var(--navy);
   cursor: pointer; box-shadow: 0 5px 12px #9C5B1E3D;
+}
+.replay-cta {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+  height: 52px; background: var(--white); border: 1.5px solid var(--teal); border-radius: 16px;
+  font-family: var(--font); font-size: 14px; font-weight: 800; color: var(--teal-dark); cursor: pointer;
 }
 
 .location-card {

@@ -5,6 +5,8 @@ import AwakeningScreen  from '../screens/AwakeningScreen.vue'
 import ShareCardScreen  from '../screens/ShareCardScreen.vue'
 import CouponScreen     from '../screens/CouponScreen.vue'
 import BuddyChatScreen  from '../screens/BuddyChatScreen.vue'
+import DashboardScreen  from '../screens/DashboardScreen.vue'
+import QrAdminScreen    from '../screens/QrAdminScreen.vue'
 import MapScreen        from '../screens/MapScreen.vue'
 import LocationScreen   from '../screens/LocationScreen.vue'
 import MiniGameScreen   from '../screens/MiniGameScreen.vue'
@@ -33,5 +35,7 @@ export default createRouter({
     { path: '/share/:buddyId',       component: ShareCardScreen },
     { path: '/coupon/:locationId',   component: CouponScreen },
     { path: '/chat/:buddyId',        component: BuddyChatScreen },
+    { path: '/dashboard',            component: DashboardScreen },
+    { path: '/qr-admin',             component: QrAdminScreen },
   ],
 })

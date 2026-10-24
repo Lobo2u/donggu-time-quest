@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { LOCATIONS, PARTNER_STORES, BUDDIES } from '../data/gameData.js'
+import { track } from '../store/statsStore.js'
 
 const router = useRouter()
 const route  = useRoute()
@@ -11,6 +12,7 @@ const store  = PARTNER_STORES[locationId]
 const buddy  = loc ? BUDDIES[loc.buddyId] : null
 
 if (!loc || !store) router.replace('/map')
+else track('coupon', locationId)
 
 // 쿠폰 코드 생성 (장소 + 날짜 기반)
 const today = new Date()
