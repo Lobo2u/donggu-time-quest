@@ -30,7 +30,7 @@ const xpPercent = (save?.xp ?? 0) + '%'
     <!-- 버디 뷰 -->
     <div class="buddy-showcase">
       <div class="showcase-bg"></div>
-      <BuddySvg mood="happy" :size="160" />
+      <BuddySvg :variant="buddy.variant" mood="happy" :size="160" />
       <div class="buddy-name-area">
         <h2 class="buddy-name">{{ buddy.name }}</h2>
         <p class="buddy-sub">{{ buddy.subtitle }}</p>

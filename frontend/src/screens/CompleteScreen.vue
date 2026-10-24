@@ -33,7 +33,7 @@ onBeforeUnmount(() => { game.lastReward = null })
 
     <!-- 획득 친구 -->
     <div v-if="buddy" class="buddy-area">
-      <BuddySvg mood="excited" :size="130" />
+      <BuddySvg :variant="buddy.variant" mood="excited" :size="130" />
     </div>
 
     <!-- 보상 카드 -->

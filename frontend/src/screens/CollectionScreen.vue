@@ -43,7 +43,7 @@ const totalCount = buddyList.length
         <!-- 획득한 버디 -->
         <template v-if="buddy.owned">
           <div class="card-art owned-art">
-            <BuddySvg mood="idle" :size="70" />
+            <BuddySvg :variant="buddy.variant" mood="idle" :size="70" />
           </div>
           <div class="card-info">
             <span class="card-name">{{ buddy.name }}</span>
