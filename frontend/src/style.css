@@ -65,24 +65,34 @@ html, body {
 }
 
 /* ── Leaflet 커스텀 마커 (scoped 안됨) ─────────────────────────── */
+/* 마커 아이콘 박스(80x76)의 투명 영역이 인접 마커·지도의 클릭을
+   가로채지 않도록, 보이는 부분(dot·label)만 클릭 대상으로 만든다.
+   클릭 이벤트는 자식 → .leaflet-marker-icon 으로 버블링되어
+   Leaflet 의 marker click 핸들러가 정상 동작한다. */
+.leaflet-marker-icon { background: transparent; border: none; pointer-events: none !important; }
+
 .lf-marker {
   display: flex; flex-direction: column; align-items: center; gap: 4px;
-  cursor: pointer; user-select: none;
+  user-select: none; pointer-events: none;
 }
-.lf-marker.locked { opacity: 0.55; cursor: not-allowed; }
 
 .lf-dot {
   width: 52px; height: 52px; border-radius: 50%; border: 2.5px solid;
   display: flex; align-items: center; justify-content: center;
   font-size: 18px; transition: transform 0.15s;
+  pointer-events: auto !important; cursor: pointer;
 }
-.lf-marker:not(.locked):active .lf-dot { transform: scale(0.88); }
+.lf-marker:not(.locked) .lf-dot:active { transform: scale(0.88); }
 .lf-marker.awoken .lf-dot { border-width: 3px; }
+.lf-marker.locked .lf-dot { cursor: not-allowed; }
+.lf-marker.locked { opacity: 0.55; }
 
 .lf-label {
   color: #FFF; border-radius: 10px; padding: 4px 9px;
   font-family: var(--font); font-size: 11px; font-weight: 800; white-space: nowrap;
+  pointer-events: auto !important; cursor: pointer;
 }
+.lf-marker.locked .lf-label { cursor: not-allowed; }
 
 /* GPS 사용자 마커 */
 .lf-user-marker { position: relative; width: 32px; height: 32px; }
@@ -107,6 +117,15 @@ html, body {
 
 /* Leaflet attribution 스타일 */
 .leaflet-control-attribution { font-size: 9px !important; }
+
+/* 줌 컨트롤: 하단 네비게이션 위로 올림 */
+.leaflet-bottom.leaflet-right { bottom: 96px; right: 14px; }
+.leaflet-control-zoom a {
+  width: 34px !important; height: 34px !important; line-height: 34px !important;
+  border-radius: 10px !important; font-size: 18px !important;
+  color: var(--navy) !important;
+}
+.leaflet-control-zoom { border: none !important; box-shadow: 0 4px 12px #062B4033; border-radius: 10px; }
 
 .btn-primary {
   display: flex;
