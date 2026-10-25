@@ -4,7 +4,7 @@ export const LOCATIONS = {
   sojedom: {
     id: 'sojedom', name: '소제동', subtitle: '옛 철도 관사촌 골목',
     mapX: 48, mapY: 252, lat: 36.3449, lng: 127.4436, arrivalRadius: 300,
-    buddyId: 'sojo', missionId: 'sojedom-memory',
+    buddyId: 'sojo', missionId: 'sojedom-field',
     unlockCondition: null,
     qrCode: 'DTQR-SOJEDOM-2025',
     realNote: '실제 소제동은 대전 동구의 역사 문화 마을로, 1930년대 철도 관사 건물들이 보존되어 있습니다.',
@@ -20,7 +20,7 @@ export const LOCATIONS = {
   jungang: {
     id: 'jungang', name: '중앙시장', subtitle: '대전의 오래된 전통 시장',
     mapX: 146, mapY: 470, lat: 36.3264, lng: 127.4203, arrivalRadius: 300,
-    buddyId: 'jungja', missionId: 'jungang-order',
+    buddyId: 'jungja', missionId: 'jungang-field',
     unlockCondition: 'sojedom',
     qrCode: 'DTQR-JUNGANG-2025',
     realNote: '대전 중앙시장은 1960년대부터 이어져 온 전통 시장으로, 다양한 먹거리와 생활용품을 판매합니다.',
@@ -36,7 +36,7 @@ export const LOCATIONS = {
   heredi: {
     id: 'heredi', name: '한의약거리', subtitle: '약령시장 일대',
     mapX: 236, mapY: 310, lat: 36.3251, lng: 127.4185, arrivalRadius: 300,
-    buddyId: 'heomi', missionId: 'heredi-pattern',
+    buddyId: 'heomi', missionId: 'heredi-field',
     unlockCondition: 'jungang',
     qrCode: 'DTQR-HEREDI-2025',
     realNote: '대전 한의약거리는 전통 약재 상점이 밀집한 지역으로, 한의학 문화를 엿볼 수 있는 곳입니다.',
@@ -52,7 +52,7 @@ export const LOCATIONS = {
   indong: {
     id: 'indong', name: '인동시장', subtitle: '골목 안 작은 시장',
     mapX: 260, mapY: 558, lat: 36.3268, lng: 127.4215, arrivalRadius: 300,
-    buddyId: 'indo', missionId: 'indong-timeline',
+    buddyId: 'indo', missionId: 'indong-field',
     unlockCondition: 'heredi',
     qrCode: 'DTQR-INDONG-2025',
     realNote: '인동시장은 대전 동구 인근에 위치한 소규모 전통 시장으로, 지역 주민들의 생활과 밀접하게 연결된 곳입니다.',
@@ -315,6 +315,64 @@ export const BUDDY_FALLBACKS = {
     '네 능력이 뭐야?': '시간의 순서를 기억하는 것이 특기입니다. 각성 후에는 처음과 끝 사건을 알려드릴 수 있어요.',
     '인동시장 가는 방법은?': '대전 동구 방면으로 이동하시면 됩니다. 실제 위치는 지도에서 확인하세요.',
     '인동시장에서 뭘 볼 수 있어?': '오래된 골목과 소규모 상점들이요. 지역 주민들의 일상을 가까이서 느낄 수 있어요.',
+  },
+}
+
+// ── 현장 탐사 미션 (사진 인식 + 방탈출식 단서 조합) ──────────────────────────
+// 각 타깃은 현장에 부착(또는 발표장에 인쇄 지참)하는 '유물 팻말' QR 코드로 인식.
+// 창작 미션이며 실제 역사 주장이 아닙니다.
+export const FIELD_QUESTS = {
+  'sojedom-field': {
+    id: 'sojedom-field', locationId: 'sojedom', type: 'field', buddyId: 'sojo',
+    title: '관사촌의 흔적을 찾아라',
+    intro: '소제동 골목을 둘러보며 옛 철도 관사의 흔적을 사진으로 담아요. 모은 단서를 이으면 잠든 시간 친구가 깨어나요.',
+    targets: [
+      { id: 'sign', code: 'DTQF-SOJEDOM-SIGN', icon: 'signpost',  label: '관사촌 안내 팻말', findHint: '골목 입구의 안내 팻말을 찾아 카메라로 담아요', clue: '철길의 방향', symbol: 'train' },
+      { id: 'roof', code: 'DTQF-SOJEDOM-ROOF', icon: 'roofing',   label: '낮은 기와지붕',   findHint: '줄지어 선 관사의 낮은 지붕을 담아요',       clue: '기와의 결',   symbol: 'home' },
+      { id: 'wall', code: 'DTQF-SOJEDOM-WALL', icon: 'grid_view', label: '오래된 담벼락',   findHint: '세월이 묻은 담벼락 문양을 담아요',          clue: '벽돌의 겹',   symbol: 'wallpaper' },
+    ],
+    solveOrder: ['sign', 'roof', 'wall'],
+    solveHint: '철길을 따라 → 지붕을 지나 → 담벼락에 이르는 길을 순서대로 이어요',
+    note: '창작 미션 · 실제 역사 주장 아님. 타깃 팻말을 인쇄해 현장에 부착하거나 발표장에서 스캔해요.',
+  },
+  'jungang-field': {
+    id: 'jungang-field', locationId: 'jungang', type: 'field', buddyId: 'jungja',
+    title: '시장 골목의 단서를 모아라',
+    intro: '중앙시장 골목을 누비며 시장의 흔적을 사진으로 담아요.',
+    targets: [
+      { id: 'gate',  code: 'DTQF-JUNGANG-GATE',  icon: 'storefront',       label: '중앙시장 간판', findHint: '시장 입구의 간판을 찾아 담아요',    clue: '시장의 입구', symbol: 'storefront' },
+      { id: 'stall', code: 'DTQF-JUNGANG-STALL', icon: 'shopping_basket',  label: '좌판의 물건',   findHint: '좌판에 놓인 물건을 담아요',          clue: '활기의 소리', symbol: 'shopping_basket' },
+      { id: 'alley', code: 'DTQF-JUNGANG-ALLEY', icon: 'store',            label: '시장 골목',     findHint: '사람들이 오가는 시장 골목을 담아요', clue: '오랜 발걸음', symbol: 'directions_walk' },
+    ],
+    solveOrder: ['gate', 'stall', 'alley'],
+    solveHint: '입구를 지나 → 좌판을 둘러보고 → 골목으로 이어지는 하루를 복원해요',
+    note: '창작 미션 · 실제 역사 주장 아님.',
+  },
+  'heredi-field': {
+    id: 'heredi-field', locationId: 'heredi', type: 'field', buddyId: 'heomi',
+    title: '약재 거리의 향기를 쫓아라',
+    intro: '한의약거리를 걸으며 전통 약재의 흔적을 사진으로 담아요.',
+    targets: [
+      { id: 'shop',   code: 'DTQF-HEREDI-SHOP',   icon: 'medication', label: '약재 상점 간판', findHint: '약재 상점의 간판을 찾아 담아요',     clue: '약재의 이름', symbol: 'medication' },
+      { id: 'herb',   code: 'DTQF-HEREDI-HERB',   icon: 'spa',        label: '진열된 약재',   findHint: '진열된 약재의 모습을 담아요',         clue: '은은한 향기', symbol: 'spa' },
+      { id: 'street', code: 'DTQF-HEREDI-STREET', icon: 'storefront', label: '거리의 표식',   findHint: '한의약거리를 알리는 표식을 담아요',   clue: '거리의 기억', symbol: 'signpost' },
+    ],
+    solveOrder: ['street', 'shop', 'herb'],
+    solveHint: '거리로 들어서 → 상점을 지나 → 약재의 향기에 이르는 길을 이어요',
+    note: '창작 미션 · 실제 역사 주장 아님.',
+  },
+  'indong-field': {
+    id: 'indong-field', locationId: 'indong', type: 'field', buddyId: 'indo',
+    title: '골목 시간의 조각을 맞춰라',
+    intro: '인동시장 골목을 돌며 오래된 가게의 흔적을 사진으로 담아요.',
+    targets: [
+      { id: 'entry', code: 'DTQF-INDONG-ENTRY', icon: 'storefront', label: '골목 입구',   findHint: '시장 골목 입구를 찾아 담아요',       clue: '골목의 시작', symbol: 'storefront' },
+      { id: 'store', code: 'DTQF-INDONG-STORE', icon: 'store',      label: '오래된 가게', findHint: '오랜 세월의 가게를 담아요',         clue: '세월의 간판', symbol: 'store' },
+      { id: 'mark',  code: 'DTQF-INDONG-MARK',  icon: 'signpost',   label: '시장 표식',   findHint: '인동시장을 알리는 표식을 담아요',    clue: '골목의 이름', symbol: 'signpost' },
+    ],
+    solveOrder: ['entry', 'store', 'mark'],
+    solveHint: '골목에 들어서 → 가게를 지나 → 표식에 이르는 하루를 복원해요',
+    note: '창작 미션 · 실제 역사 주장 아님.',
   },
 }
 

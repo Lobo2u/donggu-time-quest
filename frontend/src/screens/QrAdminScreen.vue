@@ -36,6 +36,15 @@ function printPage() { window.print() }
     </div>
 
     <div class="qa-body">
+      <button class="fieldmarker-link no-print" @click="router.push('/field-markers')">
+        <span class="msr" style="font-size:20px; color:var(--teal-dark)">photo_camera</span>
+        <div style="flex:1; text-align:left">
+          <div style="font-size:13px; font-weight:900; color:var(--ink)">현장 탐사 타깃 팻말 발급 →</div>
+          <div style="font-size:11px; font-weight:700; color:var(--muted)">카메라로 스캔하는 유물 팻말 인쇄</div>
+        </div>
+        <span class="msr" style="font-size:20px; color:var(--muted)">chevron_right</span>
+      </button>
+
       <div class="qa-guide no-print">
         <span class="msr" style="font-size:16px; color:var(--teal)">info</span>
         <p>각 장소에 해당 QR을 인쇄해 부착하세요. 방문자가 스캔하면 버디 각성 + 쿠폰이 발급됩니다.</p>
@@ -74,6 +83,11 @@ function printPage() { window.print() }
 
 .qa-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 
+.fieldmarker-link {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: var(--white); border: 2px solid var(--teal); border-radius: 16px; padding: 14px;
+  cursor: pointer; font-family: var(--font);
+}
 .qa-guide {
   display: flex; align-items: center; gap: 8px;
   background: var(--sky); border-radius: 14px; padding: 10px 14px;
