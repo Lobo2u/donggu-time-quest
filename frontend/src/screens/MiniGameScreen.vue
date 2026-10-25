@@ -2,19 +2,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { game, replayReward } from '../store/gameStore.js'
-import { LOCATIONS, MISSIONS, BUDDIES } from '../data/gameData.js'
+import { LOCATIONS, MISSIONS, FIELD_QUESTS, BUDDIES } from '../data/gameData.js'
 
 // 게임 타입별 컴포넌트
-import MemoryGame   from '../games/MemoryGame.vue'
-import OrderGame    from '../games/OrderGame.vue'
-import PatternGame  from '../games/PatternGame.vue'
-import TimelineGame from '../games/TimelineGame.vue'
+import MemoryGame     from '../games/MemoryGame.vue'
+import OrderGame      from '../games/OrderGame.vue'
+import PatternGame    from '../games/PatternGame.vue'
+import TimelineGame   from '../games/TimelineGame.vue'
+import FieldQuestGame from '../games/FieldQuestGame.vue'
 
 const router = useRouter()
 const route  = useRoute()
 const locationId = route.params.locationId
 const loc     = LOCATIONS[locationId]
-const mission = loc ? MISSIONS[loc.missionId] : null
+const mission = loc ? (FIELD_QUESTS[loc.missionId] ?? MISSIONS[loc.missionId]) : null
 
 if (!loc || !mission) {
   router.replace('/map')
@@ -27,6 +28,7 @@ const gameComponents = {
   order:    OrderGame,
   pattern:  PatternGame,
   timeline: TimelineGame,
+  field:    FieldQuestGame,
 }
 const GameComponent = computed(() => gameComponents[mission?.type])
 
