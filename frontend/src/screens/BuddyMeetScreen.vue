@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { completeMission } from '../store/gameStore.js'
 import { BUDDIES, LOCATIONS } from '../data/gameData.js'
 import BuddySvg from '../components/BuddySvg.vue'
+import CatchMiniGame from '../components/CatchMiniGame.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -17,7 +18,7 @@ const locationId = Object.values(LOCATIONS).find(l => l.buddyId === buddyId)?.id
 const loc = locationId ? LOCATIONS[locationId] : null
 
 // ── 만남 단계 ─────────────────────────────────────────────────────────────────
-// phase: 'peek' | 'bonding' | 'success'
+// phase: 'peek' | 'bonding' | 'catch' | 'success'
 const phase = ref('peek')
 const bondingStep = ref(0)
 const trustLevel = ref(0)
@@ -51,10 +52,8 @@ function selectChoice(choice, choiceIndex) {
         bondingStep.value++
         buddyMood.value = 'shy'
       } else {
-        // 교감 완료
-        phase.value = 'success'
-        buddyMood.value = 'excited'
-        completeMission(locationId, buddyId)
+        // 대화 교감 완료 → 마음 잇기(캐치) 단계로
+        phase.value = 'catch'
       }
     }, 1200)
   } else {
@@ -66,6 +65,13 @@ function selectChoice(choice, choiceIndex) {
       selectedChoice.value = null
     }, 1800)
   }
+}
+
+// 마음 잇기 성공 → 영입 완료
+function onCaught() {
+  phase.value = 'success'
+  buddyMood.value = 'excited'
+  completeMission(locationId, buddyId)
 }
 
 function goReward() {
@@ -183,6 +189,17 @@ function goReward() {
           :class="{ active: n - 1 === bondingStep, done: n - 1 < bondingStep }"
         ></div>
       </div>
+    </div>
+
+    <!-- 마음 잇기 (능동 캐치) -->
+    <div v-else-if="phase === 'catch'" class="catch-phase">
+      <div class="catch-bg"></div>
+      <div class="catch-header">
+        <p class="catch-kicker">마음 잇기</p>
+        <h2 class="catch-title">{{ buddy.name }}와 마음을 이어요</h2>
+        <p class="catch-sub">빛의 고리가 마음 고리에 닿는 순간 탭!</p>
+      </div>
+      <CatchMiniGame :variant="buddy.variant" :buddy-name="buddy.name" @caught="onCaught" />
     </div>
 
     <!-- 성공 페이즈 -->
@@ -341,6 +358,20 @@ function goReward() {
 .step-dot.done   { background: var(--teal); }
 
 /* ── Success Phase ── */
+/* 마음 잇기 페이즈 */
+.catch-phase {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 52px 20px 32px; gap: 16px; min-height: 844px; justify-content: center;
+}
+.catch-bg {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, #0E9F9A22 0%, transparent 60%);
+}
+.catch-header { text-align: center; z-index: 1; }
+.catch-kicker { font-size: 12px; font-weight: 900; color: var(--orange); letter-spacing: 1.4px; }
+.catch-title { font-size: 24px; font-weight: 900; color: var(--white); margin: 4px 0; }
+.catch-sub { font-size: 13px; font-weight: 700; color: #A8D8D4; word-break: keep-all; }
+
 .success-phase {
   display: flex; flex-direction: column;
   align-items: center; padding: 52px 24px 32px; gap: 16px; min-height: 844px;
