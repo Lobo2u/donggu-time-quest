@@ -1,5 +1,6 @@
 import { reactive, watch } from 'vue'
 import { track } from './statsStore.js'
+import { COURSES } from '../data/gameData.js'
 
 const SAVE_KEY = 'donggu-tq-v1'
 
@@ -7,7 +8,10 @@ const defaultState = () => ({
   initialized: false,
   guide: null,       // 'majung' | 'jungang'
   demoMode: true,
-  player: { level: 1, xp: 0, shards: 0 },
+  player: { level: 1, xp: 0, shards: 0, nickname: '탐험가' },
+  // 미션투어 코스: 완주 보상 수령 여부, 획득 뱃지
+  courses: {},       // { [courseId]: { rewardClaimed: bool } }
+  badges: [],        // 획득한 완주 뱃지 이름들
   locations: {
     sojedom: { status: 'available', missionComplete: false, arrivedOnce: false },
     jungang: { status: 'locked',    missionComplete: false, arrivedOnce: false },
@@ -48,6 +52,8 @@ function loadSave() {
         buddies:    { ...base.buddies,    ...parsed.buddies },
         checkIns:   { ...base.checkIns,   ...parsed.checkIns },
         dailyBonus: { ...base.dailyBonus, ...parsed.dailyBonus },
+        courses:    { ...base.courses,    ...parsed.courses },
+        badges:     parsed.badges ?? base.badges,
       }
     }
   } catch {}
@@ -192,6 +198,54 @@ export function locationStatus(id) {
 
 export function ownedBuddies() {
   return Object.values(game.buddies).filter(b => b.owned)
+}
+
+// ── 미션투어 코스 ─────────────────────────────────────────────────────────────
+export function courseProgress(courseId) {
+  const c = COURSES[courseId]
+  if (!c) return { done: 0, total: 0, complete: false, stamps: [] }
+  const stamps = c.stops.map(id => ({ id, done: !!game.locations[id]?.missionComplete }))
+  const done = stamps.filter(s => s.done).length
+  return { done, total: c.stops.length, complete: done === c.stops.length, stamps }
+}
+
+export function canClaimCourse(courseId) {
+  return courseProgress(courseId).complete && !game.courses[courseId]?.rewardClaimed
+}
+
+export function claimCourseReward(courseId) {
+  if (!canClaimCourse(courseId)) return null
+  const c = COURSES[courseId]
+  game.courses[courseId] = { rewardClaimed: true }
+  game.player.shards += c.reward.shards
+  if (c.reward.badge && !game.badges.includes(c.reward.badge)) game.badges.push(c.reward.badge)
+  return c.reward
+}
+
+// 리더보드 점수: 조각 + 완주 코스*50 + 동료*20 + 레벨*10
+export function playerScore() {
+  const completedCourses = Object.keys(COURSES).filter(id => courseProgress(id).complete).length
+  const buddies = Object.values(game.buddies).filter(b => b.owned).length
+  return game.player.shards * 3 + completedCourses * 50 + buddies * 20 + game.player.level * 10
+}
+
+// 데모 리더보드 (실제 서비스에서는 백엔드 집계)
+const DEMO_LEADERS = [
+  { name: '부산댁', score: 420 }, { name: '동구토박이', score: 380 },
+  { name: '여행러버', score: 340 }, { name: '소제동단골', score: 290 },
+  { name: '시장탐험가', score: 250 }, { name: '관광온김에', score: 210 },
+  { name: '주말나들이', score: 170 }, { name: '첫방문러', score: 120 },
+]
+
+export function leaderboard() {
+  const me = { name: game.player.nickname || '나', score: playerScore(), isMe: true }
+  const all = [...DEMO_LEADERS.map(d => ({ ...d, isMe: false })), me]
+  all.sort((a, b) => b.score - a.score)
+  return all.map((e, i) => ({ ...e, rank: i + 1 }))
+}
+
+export function setNickname(name) {
+  game.player.nickname = (name || '').trim().slice(0, 12) || '탐험가'
 }
 
 // Haversine distance in meters

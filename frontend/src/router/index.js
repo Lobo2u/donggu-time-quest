@@ -8,6 +8,9 @@ import BuddyChatScreen  from '../screens/BuddyChatScreen.vue'
 import DashboardScreen  from '../screens/DashboardScreen.vue'
 import QrAdminScreen    from '../screens/QrAdminScreen.vue'
 import FieldMarkersScreen from '../screens/FieldMarkersScreen.vue'
+import CoursesScreen     from '../screens/CoursesScreen.vue'
+import CertificateScreen from '../screens/CertificateScreen.vue'
+import RankingScreen     from '../screens/RankingScreen.vue'
 import MapScreen        from '../screens/MapScreen.vue'
 import LocationScreen   from '../screens/LocationScreen.vue'
 import MiniGameScreen   from '../screens/MiniGameScreen.vue'
@@ -39,5 +42,8 @@ export default createRouter({
     { path: '/dashboard',            component: DashboardScreen },
     { path: '/qr-admin',             component: QrAdminScreen },
     { path: '/field-markers',        component: FieldMarkersScreen },
+    { path: '/courses',              component: CoursesScreen },
+    { path: '/certificate/:courseId',component: CertificateScreen },
+    { path: '/ranking',              component: RankingScreen },
   ],
 })
