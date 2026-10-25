@@ -7,19 +7,55 @@ import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
 import OnboardingTour from '../components/OnboardingTour.vue'
 import { game, resetGame, canClaimDaily, claimDaily } from '../store/gameStore.js'
+import {
+  geo, effectivePos, distanceMeters, bearing, bearingLabel, fmtDistance,
+  startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo,
+  spawnWildNear, collectWild, WILD_COLLECT_RADIUS,
+} from '../store/geoStore.js'
 import { LOCATIONS } from '../data/gameData.js'
 
 const router = useRouter()
 const mapEl  = ref(null)
 const selected = ref(null)
+const tick = ref(0) // 근접 재계산 트리거
 
 let leafletMap = null
 let leafletMarkers = {}
+let wildMarkers = {}
 let userMarker = null
-let watchId = null
+let accuracyCircle = null
 let restorationLayers = {}
+let rafId = null
 
 const locationList = Object.values(LOCATIONS)
+
+// ── 근접 계산 ─────────────────────────────────────────────────────────────────
+function distTo(loc) {
+  void tick.value
+  const p = effectivePos()
+  return p ? distanceMeters(p, { lat: loc.lat, lng: loc.lng }) : Infinity
+}
+function arrived(loc) {
+  void tick.value
+  return isWithin(loc, loc.arrivalRadius)
+}
+// 레이더: 미완료·선택가능 장소를 거리순 정렬
+const radar = computed(() => {
+  void tick.value
+  const p = effectivePos()
+  return locationList
+    .filter(l => locStatus(l.id) !== 'complete')
+    .map(l => ({
+      loc: l,
+      d: distTo(l),
+      dir: p ? bearingLabel(bearing(p, { lat: l.lat, lng: l.lng })) : '',
+      deg: p ? bearing(p, { lat: l.lat, lng: l.lng }) : 0,
+      arrived: arrived(l),
+      selectable: canSelect(l.id),
+    }))
+    .sort((a, b) => a.d - b.d)
+})
+const hasPos = computed(() => { void tick.value; return !!effectivePos() })
 
 // ── 상태 헬퍼 ────────────────────────────────────────────────────────────────
 function locStatus(id) { return game.locations[id]?.status ?? 'locked' }
@@ -149,29 +185,75 @@ function addRestorationEffect(locId) {
   restorationLayers[locId] = circle
 }
 
-// ── GPS 추적 ─────────────────────────────────────────────────────────────────
-function startGPS() {
-  if (!navigator.geolocation) return
-  watchId = navigator.geolocation.watchPosition(
-    ({ coords }) => updateUserPosition(coords.latitude, coords.longitude),
-    () => {},
-    { enableHighAccuracy: true, maximumAge: 5000 },
-  )
+// ── 플레이어 아바타 + 야생 스폰 렌더 ─────────────────────────────────────────
+const guideVariant = () => game.guide === 'jungang' ? 'jungang' : 'majung'
+
+function renderPlayer() {
+  const p = effectivePos()
+  if (!leafletMap || !p) return
+  if (!userMarker) {
+    const icon = L.divIcon({
+      html: `<div class="lf-user-marker">
+               <div class="lf-user-pulse"></div>
+               <div class="lf-user-avatar">${guideVariant() === 'jungang' ? '🏪' : '🐧'}</div>
+             </div>`,
+      className: '', iconSize: [46, 46], iconAnchor: [23, 23],
+    })
+    userMarker = L.marker([p.lat, p.lng], { icon, zIndexOffset: 2000 }).addTo(leafletMap)
+    accuracyCircle = L.circle([p.lat, p.lng], {
+      radius: geo.accuracy ?? 30, color: '#4A90D9', fillColor: '#4A90D9',
+      fillOpacity: 0.08, weight: 1, opacity: 0.3,
+    }).addTo(leafletMap)
+  } else {
+    userMarker.setLatLng([p.lat, p.lng])
+    accuracyCircle?.setLatLng([p.lat, p.lng])
+    if (geo.accuracy) accuracyCircle?.setRadius(Math.min(geo.accuracy, 120))
+  }
 }
 
-function updateUserPosition(lat, lng) {
+function renderWild() {
   if (!leafletMap) return
-  const icon = L.divIcon({
-    html: '<div class="lf-user-marker"><div class="lf-user-pulse"></div><div class="lf-user-dot"></div></div>',
-    className: '',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+  const p = effectivePos()
+  // 제거된 스폰 정리
+  Object.keys(wildMarkers).forEach(id => {
+    if (!geo.wildSpots.find(w => w.id === id)) {
+      leafletMap.removeLayer(wildMarkers[id]); delete wildMarkers[id]
+    }
   })
-  if (userMarker) {
-    userMarker.setLatLng([lat, lng])
+  geo.wildSpots.forEach(w => {
+    const near = p && distanceMeters(p, w) <= WILD_COLLECT_RADIUS
+    const html = `<div class="lf-wild${near ? ' near' : ''}"><span class="lf-wild-gem">◆</span></div>`
+    if (!wildMarkers[w.id]) {
+      const icon = L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] })
+      wildMarkers[w.id] = L.marker([w.lat, w.lng], { icon, zIndexOffset: 500 })
+        .addTo(leafletMap)
+        .on('click', (e) => { L.DomEvent.stopPropagation(e); tryCollectWild(w.id) })
+    } else {
+      wildMarkers[w.id].setIcon(L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }))
+    }
+  })
+}
+
+const wildToast = ref(null)
+function tryCollectWild(id) {
+  const got = collectWild(id)
+  if (got) {
+    wildToast.value = `야생 시간 조각 +${got}`
+    setTimeout(() => { wildToast.value = null }, 1600)
+    // 다 주웠으면 주변에 새로 스폰
+    if (!geo.wildSpots.length) setTimeout(() => spawnWildNear(effectivePos(), 3), 800)
   } else {
-    userMarker = L.marker([lat, lng], { icon }).addTo(leafletMap)
+    wildToast.value = '너무 멀어요! 가까이 가서 주워요'
+    setTimeout(() => { wildToast.value = null }, 1600)
   }
+}
+
+// 근접 상태 주기적 갱신 (거리 라벨/도착 판정 재계산)
+function loop() {
+  tick.value++
+  renderPlayer()
+  renderWild()
+  rafId = setTimeout(loop, 500)
 }
 
 // ── 목표 표시 ─────────────────────────────────────────────────────────────────
@@ -189,9 +271,22 @@ const guideMsg  = computed(() => {
   return avail ? `${avail.name} 핀을 눌러 탐험을 시작해요!` : '모든 기억을 복원했어요!'
 })
 
+// 스팟 상호작용: 도착(반경 내)했을 때만 미션/보상 가능
 function goExplore() {
   if (!selected.value) return
+  if (!arrived(selected.value)) return   // 도착 전이면 불가
   router.push(`/location/${selected.value.id}`)
+}
+
+// 시연: 선택한 스팟으로 걸어가기 (도착 시뮬레이션)
+const walking = ref(false)
+function walkToSelected() {
+  if (!selected.value) return
+  walking.value = true
+  simulateWalkTo(
+    { lat: selected.value.lat, lng: selected.value.lng },
+    () => { walking.value = false; teleportDemo(selected.value); tick.value++ },
+  )
 }
 
 // 일일 보너스
@@ -214,18 +309,34 @@ watch(
   { deep: true },
 )
 
+// 레이더 항목 선택 → 지도 이동 + 바텀시트
+function pickFromRadar(entry) {
+  if (!entry.selectable) return
+  selected.value = entry.loc
+  leafletMap?.panTo([entry.loc.lat, entry.loc.lng])
+}
+
 // ── 라이프사이클 ──────────────────────────────────────────────────────────────
 onMounted(() => {
   initMap()
-  startGPS()
-  // 이미 완료된 장소 복원 효과
+  startWatch()
+  // 시연: GPS가 없으면 현재 목표 근처를 가상 위치로 설정
+  setTimeout(() => {
+    if (!effectivePos() && game.demoMode) {
+      const obj = locationList.find(l => ['available', 'in_progress'].includes(locStatus(l.id))) ?? locationList[0]
+      teleportDemo({ lat: obj.lat - 0.0025, lng: obj.lng - 0.0025 }) // 조금 떨어진 곳에서 시작
+    }
+    spawnWildNear(effectivePos(), 3)
+  }, 1200)
   locationList.forEach(loc => {
     if (locStatus(loc.id) === 'complete') addRestorationEffect(loc.id)
   })
+  loop()
 })
 
 onBeforeUnmount(() => {
-  if (watchId != null) navigator.geolocation.clearWatch(watchId)
+  if (rafId) clearTimeout(rafId)
+  stopWatch()
   if (leafletMap) { leafletMap.remove(); leafletMap = null }
 })
 </script>
@@ -257,6 +368,9 @@ onBeforeUnmount(() => {
 
     <!-- 지도 컨트롤 -->
     <div class="map-controls">
+      <button v-if="showDaily" class="map-ctrl-btn daily-ctrl" title="오늘의 보너스" @click="claimDailyBonus">
+        <span class="msr" style="font-size:22px; color:var(--orange)">redeem</span>
+      </button>
       <button class="map-ctrl-btn" title="도감" @click="$router.push('/collection')">
         <span class="msr" style="font-size:22px; color:var(--navy)">auto_stories</span>
       </button>
@@ -283,23 +397,6 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- 핀 범례 -->
-    <div class="pin-legend">
-      <div class="pin-item"><span class="pin-dot" style="background:#FF9F1C"></span><span>탐험 가능</span></div>
-      <div class="pin-item"><span class="pin-dot" style="background:#08756F"></span><span>완료</span></div>
-      <div class="pin-item"><span class="pin-dot" style="background:#8EA4AF"></span><span>잠김</span></div>
-    </div>
-
-    <!-- 일일 탐험 보너스 -->
-    <button v-if="showDaily && !selected" class="daily-bonus" @click="claimDailyBonus">
-      <span class="msr daily-gift" style="font-size:26px; color:var(--orange)">redeem</span>
-      <div class="daily-text">
-        <span class="daily-title">오늘의 탐험 보너스</span>
-        <span class="daily-sub">눌러서 시간 조각 받기</span>
-      </div>
-      <span class="msr" style="font-size:20px; color:var(--orange)">chevron_right</span>
-    </button>
-
     <!-- 일일 보너스 수령 결과 -->
     <Transition name="pop">
       <div v-if="dailyResult" class="daily-result" @click="dailyResult = null">
@@ -313,16 +410,43 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <!-- 가이드 말풍선 -->
-    <div class="compact-guide" v-if="!selected && !showDaily">
-      <div class="guide-char">
-        <BuddySvg :variant="game.guide === 'jungang' ? 'jungang' : 'majung'" mood="happy" :size="48" />
+    <!-- 주변 레이더 -->
+    <div class="radar-panel" v-if="!selected">
+      <div class="radar-head">
+        <span class="msr" style="font-size:16px; color:var(--teal)">radar</span>
+        <span class="radar-title">주변 스팟</span>
+        <span class="radar-walk" v-if="geo.walkedMeters > 0">
+          🚶 {{ Math.round(geo.walkedMeters) }}m · 조각 {{ geo.walkRewardShards }}
+        </span>
       </div>
-      <div class="guide-text">
-        <span class="guide-name">{{ guideName }}의 탐험 제안</span>
-        <span class="guide-line">{{ guideMsg }}</span>
+      <div class="radar-list">
+        <button
+          v-for="r in radar.slice(0, 3)" :key="r.loc.id"
+          class="radar-item" :class="{ arrived: r.arrived, locked: !r.selectable }"
+          @click="pickFromRadar(r)"
+        >
+          <span class="radar-dir" :style="{ transform: `rotate(${r.deg}deg)` }">
+            <span class="msr" style="font-size:18px">navigation</span>
+          </span>
+          <div class="radar-info">
+            <span class="radar-name">{{ r.loc.name }}</span>
+            <span class="radar-meta">
+              {{ r.selectable ? (r.arrived ? '도착 · 미션 가능' : `${r.dir}쪽 ${fmtDistance(r.d)}`) : '잠김' }}
+            </span>
+          </div>
+          <span v-if="r.arrived && r.selectable" class="radar-badge">GO</span>
+          <span v-else-if="r.selectable" class="radar-dist">{{ fmtDistance(r.d) }}</span>
+        </button>
       </div>
     </div>
+
+    <!-- 야생 조각 토스트 -->
+    <Transition name="toast">
+      <div v-if="wildToast" class="wild-toast">
+        <span class="msr" style="font-size:18px; color:var(--orange)">diamond</span>
+        {{ wildToast }}
+      </div>
+    </Transition>
 
     <!-- 하단 네비게이션 -->
     <div class="nav-wrap">
@@ -363,23 +487,33 @@ onBeforeUnmount(() => {
         </div>
 
         <div v-else>
-          <div class="mode-row">
-            <div class="mode-chip active">
-              <span class="msr" style="font-size:14px">science</span>
-              시연 모드
-            </div>
-            <div class="mode-chip">
-              <span class="msr" style="font-size:14px">location_on</span>
-              GPS 모드
-            </div>
+          <!-- 도착 상태 표시 -->
+          <div class="arrival-status" :class="{ here: arrived(selected) }">
+            <span class="msr" style="font-size:20px" :style="{ color: arrived(selected) ? 'var(--teal)' : 'var(--orange)' }">
+              {{ arrived(selected) ? 'where_to_vote' : 'directions_walk' }}
+            </span>
+            <span v-if="arrived(selected)">도착! 이 장소의 미션을 시작할 수 있어요</span>
+            <span v-else>아직 <b>{{ fmtDistance(distTo(selected)) }}</b> 남았어요 · 가까이 가면 열려요</span>
           </div>
-          <button class="btn-primary" style="width:100%" @click="goExplore">
+
+          <!-- 도착함 → 미션 시작 -->
+          <button v-if="arrived(selected)" class="btn-primary" style="width:100%" @click="goExplore">
             <span class="msr" style="font-size:22px; color:var(--navy)">near_me</span>
-            {{ locStatus(selected.id) === 'in_progress' ? '탐험 계속하기' : '탐험 시작' }}
+            {{ locStatus(selected.id) === 'in_progress' ? '미션 계속하기' : '미션 시작' }}
+          </button>
+
+          <!-- 도착 전 → 시연 걸어가기 -->
+          <button v-else class="btn-walk" :disabled="walking" @click="walkToSelected">
+            <span class="msr" style="font-size:20px">{{ walking ? 'directions_walk' : 'play_circle' }}</span>
+            {{ walking ? '걸어가는 중…' : '여기로 걸어가기 (시연)' }}
           </button>
         </div>
 
-        <p class="sheet-note">GPS·QR은 구현 예정 기능입니다. 시연 모드로 장소 도착을 시뮬레이션해요.</p>
+        <p class="sheet-note">
+          {{ arrived(selected)
+            ? '스팟에 도착했을 때만 미션·보상이 열려요.'
+            : '실제로는 GPS로 이 위치에 도착하면 열려요. 발표에선 시연 걸어가기로 체험해요.' }}
+        </p>
       </div>
     </Transition>
   </div>
@@ -465,23 +599,70 @@ onBeforeUnmount(() => {
 
 .nav-wrap { position: absolute; left: 16px; top: 754px; z-index: 10; }
 
-/* 일일 보너스 */
-.daily-bonus {
-  position: absolute; left: 16px; top: 642px; width: 285px; z-index: 10;
-  background: linear-gradient(135deg, #FFF3D6, #FFE0A3);
-  border: 2px solid var(--orange); border-radius: 20px;
-  box-shadow: 0 5px 16px #FF9F1C44;
-  display: flex; align-items: center; gap: 10px; padding: 12px 14px;
-  cursor: pointer; font-family: var(--font);
-}
-.daily-gift { animation: gift-shake 1.5s ease-in-out infinite; }
+/* 일일 보너스 버튼 (지도 컨트롤) */
+.daily-ctrl { border: 2px solid var(--orange); animation: gift-shake 1.5s ease-in-out infinite; }
 @keyframes gift-shake {
   0%, 60%, 100% { transform: rotate(0); }
   70% { transform: rotate(-10deg); } 80% { transform: rotate(10deg); } 90% { transform: rotate(-6deg); }
 }
-.daily-text { flex: 1; display: flex; flex-direction: column; gap: 1px; text-align: left; }
-.daily-title { font-size: 13px; font-weight: 900; color: var(--navy); }
-.daily-sub { font-size: 11px; font-weight: 700; color: #9C5B1E; }
+
+/* 주변 레이더 */
+.radar-panel {
+  position: absolute; left: 16px; top: 582px; width: 358px; z-index: 10;
+  background: #FFFFFFF5; border-radius: 20px; padding: 10px 12px;
+  box-shadow: 0 5px 18px #062B4033;
+}
+.radar-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.radar-title { font-size: 12px; font-weight: 900; color: var(--ink); }
+.radar-walk { margin-left: auto; font-size: 10px; font-weight: 800; color: var(--teal-dark); }
+.radar-list { display: flex; flex-direction: column; gap: 6px; }
+.radar-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: #F2F8F7; border: 1.5px solid transparent; border-radius: 13px;
+  padding: 8px 10px; cursor: pointer; font-family: var(--font);
+}
+.radar-item.arrived { background: #DFF7F4; border-color: var(--teal); }
+.radar-item.locked { opacity: 0.5; cursor: not-allowed; }
+.radar-dir {
+  width: 30px; height: 30px; border-radius: 50%; background: var(--navy);
+  display: flex; align-items: center; justify-content: center; color: var(--orange); flex-shrink: 0;
+  transition: transform 0.3s;
+}
+.radar-dir .msr { color: var(--orange); }
+.radar-info { flex: 1; display: flex; flex-direction: column; gap: 1px; text-align: left; }
+.radar-name { font-size: 13px; font-weight: 900; color: var(--ink); }
+.radar-meta { font-size: 10px; font-weight: 700; color: var(--muted); }
+.radar-badge {
+  background: var(--orange); color: var(--navy); border-radius: 8px;
+  padding: 3px 10px; font-size: 12px; font-weight: 900;
+}
+.radar-dist { font-size: 12px; font-weight: 900; color: var(--teal-dark); }
+
+/* 야생 토스트 */
+.wild-toast {
+  position: absolute; left: 50%; top: 150px; transform: translateX(-50%); z-index: 30;
+  background: var(--navy); color: white; border-radius: 14px; padding: 10px 16px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 800; white-space: nowrap; box-shadow: 0 6px 20px #00000055;
+}
+.toast-enter-active, .toast-leave-active { transition: all 0.3s; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translate(-50%, -10px); }
+
+/* 도착 상태 */
+.arrival-status {
+  display: flex; align-items: center; gap: 8px;
+  background: #FFF3E0; border-radius: 12px; padding: 10px 12px;
+  font-size: 12px; font-weight: 800; color: var(--ink); margin-bottom: 4px; word-break: keep-all;
+}
+.arrival-status.here { background: #DFF7F4; }
+.arrival-status b { color: var(--orange); }
+
+.btn-walk {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 52px; background: var(--navy); color: white; border: none; border-radius: 16px;
+  font-family: var(--font); font-size: 15px; font-weight: 800; cursor: pointer;
+}
+.btn-walk:disabled { opacity: 0.7; }
 
 .daily-result {
   position: absolute; inset: 0; z-index: 50; background: #08233Fcc;
