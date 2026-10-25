@@ -318,6 +318,32 @@ export const BUDDY_FALLBACKS = {
   },
 }
 
+// ── 미션투어 코스 (스팟을 테마별로 묶은 투어) ───────────────────────────────
+export const COURSES = {
+  'donggu-day': {
+    id: 'donggu-day',
+    name: '사라진 동구의 하루',
+    theme: '역사·기억',
+    icon: 'history_edu',
+    color: '#FF9F1C',
+    desc: '철도 관사촌부터 전통시장까지, 동구의 하루를 따라 걷는 대표 코스예요.',
+    estimatedMin: 90,
+    stops: ['sojedom', 'jungang', 'heredi', 'indong'],
+    reward: { shards: 3, badge: '동구 시간탐험가' },
+  },
+  'market-tour': {
+    id: 'market-tour',
+    name: '동구 전통시장 한바퀴',
+    theme: '전통시장',
+    icon: 'storefront',
+    color: '#0E9F9A',
+    desc: '활기 넘치는 중앙시장과 인동시장을 잇는 짧은 시장 코스예요.',
+    estimatedMin: 45,
+    stops: ['jungang', 'indong'],
+    reward: { shards: 2, badge: '시장 골목 미식가' },
+  },
+}
+
 // ── 현장 탐사 미션 (사진 인식 + 방탈출식 단서 조합) ──────────────────────────
 // 각 타깃은 현장에 부착(또는 발표장에 인쇄 지참)하는 '유물 팻말' QR 코드로 인식.
 // 창작 미션이며 실제 역사 주장이 아닙니다.

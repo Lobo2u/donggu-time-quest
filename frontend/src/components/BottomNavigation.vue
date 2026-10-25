@@ -6,6 +6,7 @@ const route = useRoute()
 
 const tabs = [
   { label: '탐험', icon: 'explore',      route: '/map',        matchPrefix: '/map' },
+  { label: '코스', icon: 'route',        route: '/courses',    matchPrefix: '/courses' },
   { label: '도감', icon: 'auto_stories', route: '/collection', matchPrefix: '/collection' },
   { label: '내 기록', icon: 'timeline',  route: '/record',     matchPrefix: '/record' },
 ]
@@ -48,7 +49,8 @@ function isActive(tab) {
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  width: 88px;
+  flex: 1;
+  min-width: 0;
   background: none;
   border: none;
   cursor: pointer;
