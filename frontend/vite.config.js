@@ -2,7 +2,11 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// GitHub Pages 서브경로 배포용 base (워크플로에서 BASE_PATH 주입)
+const base = process.env.BASE_PATH || '/'
+
 export default defineConfig({
+  base,
   plugins: [
     vue(),
     VitePWA({
@@ -16,7 +20,8 @@ export default defineConfig({
         background_color: '#08233F',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        start_url: base,
+        scope: base,
         lang: 'ko',
         categories: ['games', 'travel', 'entertainment'],
         icons: [
@@ -29,7 +34,6 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,woff2}'],
         runtimeCaching: [
           {
-            // OpenStreetMap 타일 캐싱 (오프라인/반복 방문 대비)
             urlPattern: /^https:\/\/[a-c]\.tile\.openstreetmap\.org\/.*/i,
             handler: 'CacheFirst',
             options: {
