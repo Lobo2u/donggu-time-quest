@@ -344,62 +344,92 @@ export const COURSES = {
   },
 }
 
-// ── 현장 탐사 미션 (사진 인식 + 방탈출식 단서 조합) ──────────────────────────
-// 각 타깃은 현장에 부착(또는 발표장에 인쇄 지참)하는 '유물 팻말' QR 코드로 인식.
-// 창작 미션이며 실제 역사 주장이 아닙니다.
+// ── 현장 탐사 미션 (사진 인식 → 수수께끼 단서 → 숫자 자물쇠) ──────────────────
+// 타깃 팻말을 카메라로 스캔하면 '수수께끼 단서'가 열림. 단서를 직접 읽고 추리해
+// 숫자 자물쇠(기억의 자물쇠)를 풀어야 시간 친구가 깨어난다.
+// 단서 답: word 가 있으면 글자 수, count 가 있으면 그 수.  창작 미션.
 export const FIELD_QUESTS = {
   'sojedom-field': {
     id: 'sojedom-field', locationId: 'sojedom', type: 'field', buddyId: 'sojo',
-    title: '관사촌의 흔적을 찾아라',
-    intro: '소제동 골목을 둘러보며 옛 철도 관사의 흔적을 사진으로 담아요. 모은 단서를 이으면 잠든 시간 친구가 깨어나요.',
+    title: '관사촌의 기억을 열어라',
+    intro: '소제동 골목에서 옛 철도 관사의 흔적을 찾아 수수께끼를 풀고, 기억의 자물쇠를 열어요.',
     targets: [
-      { id: 'sign', code: 'DTQF-SOJEDOM-SIGN', icon: 'signpost',  label: '관사촌 안내 팻말', findHint: '골목 입구의 안내 팻말을 찾아 카메라로 담아요', clue: '철길의 방향', symbol: 'train' },
-      { id: 'roof', code: 'DTQF-SOJEDOM-ROOF', icon: 'roofing',   label: '낮은 기와지붕',   findHint: '줄지어 선 관사의 낮은 지붕을 담아요',       clue: '기와의 결',   symbol: 'home' },
-      { id: 'wall', code: 'DTQF-SOJEDOM-WALL', icon: 'grid_view', label: '오래된 담벼락',   findHint: '세월이 묻은 담벼락 문양을 담아요',          clue: '벽돌의 겹',   symbol: 'wallpaper' },
+      { id: 'sign', code: 'DTQF-SOJEDOM-SIGN', icon: 'signpost', pos: 1,
+        label: '관사촌 안내 팻말', findHint: '골목 입구의 안내 팻말을 찾아 스캔해요',
+        riddle: '팻말에 새겨진 이 마을의 옛 이름은 몇 글자일까?', word: '소제동' },
+      { id: 'roof', code: 'DTQF-SOJEDOM-ROOF', icon: 'roofing', pos: 2,
+        label: '낮은 기와지붕', findHint: '줄지어 선 관사의 지붕을 찾아 스캔해요',
+        riddle: '나란히 이어진 관사의 지붕은 모두 몇 채일까?', count: 5, countIcon: 'home' },
+      { id: 'wall', code: 'DTQF-SOJEDOM-WALL', icon: 'grid_view', pos: 3,
+        label: '오래된 담벼락', findHint: '세월이 묻은 담벼락을 찾아 스캔해요',
+        riddle: '담벼락에 쌓아 올린 벽돌은 몇 줄일까?', count: 2, countIcon: 'horizontal_rule' },
     ],
-    solveOrder: ['sign', 'roof', 'wall'],
-    solveHint: '철길을 따라 → 지붕을 지나 → 담벼락에 이르는 길을 순서대로 이어요',
+    lockHint: '세 단서에서 찾은 숫자를 팻말(1) → 지붕(2) → 담벼락(3) 순서로 맞춰요',
     note: '창작 미션 · 실제 역사 주장 아님. 타깃 팻말을 인쇄해 현장에 부착하거나 발표장에서 스캔해요.',
   },
   'jungang-field': {
     id: 'jungang-field', locationId: 'jungang', type: 'field', buddyId: 'jungja',
-    title: '시장 골목의 단서를 모아라',
-    intro: '중앙시장 골목을 누비며 시장의 흔적을 사진으로 담아요.',
+    title: '시장의 주문을 풀어라',
+    intro: '중앙시장 골목에서 흔적을 찾아 수수께끼를 풀고, 기억의 자물쇠를 열어요.',
     targets: [
-      { id: 'gate',  code: 'DTQF-JUNGANG-GATE',  icon: 'storefront',       label: '중앙시장 간판', findHint: '시장 입구의 간판을 찾아 담아요',    clue: '시장의 입구', symbol: 'storefront' },
-      { id: 'stall', code: 'DTQF-JUNGANG-STALL', icon: 'shopping_basket',  label: '좌판의 물건',   findHint: '좌판에 놓인 물건을 담아요',          clue: '활기의 소리', symbol: 'shopping_basket' },
-      { id: 'alley', code: 'DTQF-JUNGANG-ALLEY', icon: 'store',            label: '시장 골목',     findHint: '사람들이 오가는 시장 골목을 담아요', clue: '오랜 발걸음', symbol: 'directions_walk' },
+      { id: 'gate',  code: 'DTQF-JUNGANG-GATE',  icon: 'storefront', pos: 1,
+        label: '중앙시장 간판', findHint: '시장 입구의 간판을 찾아 스캔해요',
+        riddle: '간판에 적힌 시장 이름은 몇 글자일까?', word: '중앙시장' },
+      { id: 'stall', code: 'DTQF-JUNGANG-STALL', icon: 'storefront', pos: 2,
+        label: '좌판의 과일', findHint: '좌판에 놓인 과일을 찾아 스캔해요',
+        riddle: '좌판 위에 놓인 과일은 모두 몇 개일까?', count: 6, countIcon: 'nutrition' },
+      { id: 'alley', code: 'DTQF-JUNGANG-ALLEY', icon: 'store', pos: 3,
+        label: '시장 갈림길', findHint: '시장 골목의 갈림길을 찾아 스캔해요',
+        riddle: '골목은 몇 갈래로 나뉠까?', count: 3, countIcon: 'call_split' },
     ],
-    solveOrder: ['gate', 'stall', 'alley'],
-    solveHint: '입구를 지나 → 좌판을 둘러보고 → 골목으로 이어지는 하루를 복원해요',
+    lockHint: '찾은 숫자를 간판(1) → 과일(2) → 갈림길(3) 순서로 맞춰요',
     note: '창작 미션 · 실제 역사 주장 아님.',
   },
   'heredi-field': {
     id: 'heredi-field', locationId: 'heredi', type: 'field', buddyId: 'heomi',
-    title: '약재 거리의 향기를 쫓아라',
-    intro: '한의약거리를 걸으며 전통 약재의 흔적을 사진으로 담아요.',
+    title: '약재의 비밀을 밝혀라',
+    intro: '한의약거리에서 흔적을 찾아 수수께끼를 풀고, 기억의 자물쇠를 열어요.',
     targets: [
-      { id: 'shop',   code: 'DTQF-HEREDI-SHOP',   icon: 'medication', label: '약재 상점 간판', findHint: '약재 상점의 간판을 찾아 담아요',     clue: '약재의 이름', symbol: 'medication' },
-      { id: 'herb',   code: 'DTQF-HEREDI-HERB',   icon: 'spa',        label: '진열된 약재',   findHint: '진열된 약재의 모습을 담아요',         clue: '은은한 향기', symbol: 'spa' },
-      { id: 'street', code: 'DTQF-HEREDI-STREET', icon: 'storefront', label: '거리의 표식',   findHint: '한의약거리를 알리는 표식을 담아요',   clue: '거리의 기억', symbol: 'signpost' },
+      { id: 'street', code: 'DTQF-HEREDI-STREET', icon: 'signpost', pos: 1,
+        label: '거리의 표식', findHint: '한의약거리를 알리는 표식을 찾아 스캔해요',
+        riddle: '표식에 적힌 거리 이름은 몇 글자일까?', word: '한의약거리' },
+      { id: 'shop', code: 'DTQF-HEREDI-SHOP', icon: 'medication', pos: 2,
+        label: '약재 항아리', findHint: '상점 앞 약재 항아리를 찾아 스캔해요',
+        riddle: '상점 앞에 놓인 약재 항아리는 몇 개일까?', count: 4, countIcon: 'science' },
+      { id: 'herb', code: 'DTQF-HEREDI-HERB', icon: 'spa', pos: 3,
+        label: '매달린 약초', findHint: '처마에 매달린 약초 다발을 찾아 스캔해요',
+        riddle: '처마에 매달린 약초 다발은 몇 묶음일까?', count: 2, countIcon: 'spa' },
     ],
-    solveOrder: ['street', 'shop', 'herb'],
-    solveHint: '거리로 들어서 → 상점을 지나 → 약재의 향기에 이르는 길을 이어요',
+    lockHint: '찾은 숫자를 표식(1) → 항아리(2) → 약초(3) 순서로 맞춰요',
     note: '창작 미션 · 실제 역사 주장 아님.',
   },
   'indong-field': {
     id: 'indong-field', locationId: 'indong', type: 'field', buddyId: 'indo',
-    title: '골목 시간의 조각을 맞춰라',
-    intro: '인동시장 골목을 돌며 오래된 가게의 흔적을 사진으로 담아요.',
+    title: '골목의 시간을 되돌려라',
+    intro: '인동시장 골목에서 흔적을 찾아 수수께끼를 풀고, 기억의 자물쇠를 열어요.',
     targets: [
-      { id: 'entry', code: 'DTQF-INDONG-ENTRY', icon: 'storefront', label: '골목 입구',   findHint: '시장 골목 입구를 찾아 담아요',       clue: '골목의 시작', symbol: 'storefront' },
-      { id: 'store', code: 'DTQF-INDONG-STORE', icon: 'store',      label: '오래된 가게', findHint: '오랜 세월의 가게를 담아요',         clue: '세월의 간판', symbol: 'store' },
-      { id: 'mark',  code: 'DTQF-INDONG-MARK',  icon: 'signpost',   label: '시장 표식',   findHint: '인동시장을 알리는 표식을 담아요',    clue: '골목의 이름', symbol: 'signpost' },
+      { id: 'entry', code: 'DTQF-INDONG-ENTRY', icon: 'signpost', pos: 1,
+        label: '시장 표식', findHint: '인동시장을 알리는 표식을 찾아 스캔해요',
+        riddle: '표식에 적힌 시장 이름은 몇 글자일까?', word: '인동시장' },
+      { id: 'store', code: 'DTQF-INDONG-STORE', icon: 'store', pos: 2,
+        label: '오래된 간판', findHint: '세월이 묻은 가게 간판을 찾아 스캔해요',
+        riddle: '골목에 걸린 오래된 간판은 몇 개일까?', count: 3, countIcon: 'storefront' },
+      { id: 'mark', code: 'DTQF-INDONG-MARK', icon: 'turn_sharp_right', pos: 3,
+        label: '골목 모퉁이', findHint: '골목이 꺾이는 모퉁이를 찾아 스캔해요',
+        riddle: '골목이 꺾이는 모퉁이는 몇 군데일까?', count: 5, countIcon: 'turn_right' },
     ],
-    solveOrder: ['entry', 'store', 'mark'],
-    solveHint: '골목에 들어서 → 가게를 지나 → 표식에 이르는 하루를 복원해요',
+    lockHint: '찾은 숫자를 표식(1) → 간판(2) → 모퉁이(3) 순서로 맞춰요',
     note: '창작 미션 · 실제 역사 주장 아님.',
   },
+}
+
+// 단서의 정답 숫자 (글자 수 또는 개수)
+export function clueAnswer(target) {
+  return target.word ? [...target.word].length : (target.count ?? 0)
+}
+// 자물쇠 정답 코드 (pos 순서)
+export function lockCode(quest) {
+  return [...quest.targets].sort((a, b) => a.pos - b.pos).map(clueAnswer).join('')
 }
 
 export const MISSIONS = {
