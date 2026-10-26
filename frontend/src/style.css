@@ -136,8 +136,8 @@ html, body {
 /* Leaflet attribution 스타일 */
 .leaflet-control-attribution { font-size: 9px !important; }
 
-/* 줌 컨트롤: 하단 네비게이션 위로 올림 */
-.leaflet-bottom.leaflet-right { bottom: 96px; right: 14px; }
+/* 줌 컨트롤: 레이더 패널 위 오른쪽 */
+.leaflet-bottom.leaflet-right { bottom: 285px; right: 12px; }
 .leaflet-control-zoom a {
   width: 34px !important; height: 34px !important; line-height: 34px !important;
   border-radius: 10px !important; font-size: 18px !important;

@@ -3,7 +3,7 @@
 export const LOCATIONS = {
   sojedom: {
     id: 'sojedom', name: '소제동', subtitle: '옛 철도 관사촌 골목',
-    mapX: 48, mapY: 252, lat: 36.3449, lng: 127.4436, arrivalRadius: 300,
+    mapX: 48, mapY: 252, lat: 36.3338, lng: 127.4378, arrivalRadius: 300,
     buddyId: 'sojo', missionId: 'sojedom-field',
     unlockCondition: null,
     qrCode: 'DTQR-SOJEDOM-2025',
@@ -19,7 +19,7 @@ export const LOCATIONS = {
   },
   jungang: {
     id: 'jungang', name: '중앙시장', subtitle: '대전의 오래된 전통 시장',
-    mapX: 146, mapY: 470, lat: 36.3264, lng: 127.4203, arrivalRadius: 300,
+    mapX: 146, mapY: 470, lat: 36.3278, lng: 127.4310, arrivalRadius: 300,
     buddyId: 'jungja', missionId: 'jungang-field',
     unlockCondition: 'sojedom',
     qrCode: 'DTQR-JUNGANG-2025',
@@ -35,7 +35,7 @@ export const LOCATIONS = {
   },
   heredi: {
     id: 'heredi', name: '한의약거리', subtitle: '약령시장 일대',
-    mapX: 236, mapY: 310, lat: 36.3251, lng: 127.4185, arrivalRadius: 300,
+    mapX: 236, mapY: 310, lat: 36.3263, lng: 127.4295, arrivalRadius: 300,
     buddyId: 'heomi', missionId: 'heredi-field',
     unlockCondition: 'jungang',
     qrCode: 'DTQR-HEREDI-2025',
@@ -51,7 +51,7 @@ export const LOCATIONS = {
   },
   indong: {
     id: 'indong', name: '인동시장', subtitle: '골목 안 작은 시장',
-    mapX: 260, mapY: 558, lat: 36.3268, lng: 127.4215, arrivalRadius: 300,
+    mapX: 260, mapY: 558, lat: 36.3300, lng: 127.4365, arrivalRadius: 300,
     buddyId: 'indo', missionId: 'indong-field',
     unlockCondition: 'heredi',
     qrCode: 'DTQR-INDONG-2025',

@@ -53,7 +53,8 @@ const radar = computed(() => {
       arrived: arrived(l),
       selectable: canSelect(l.id),
     }))
-    .sort((a, b) => a.d - b.d)
+    // 탐험 가능한 스팟을 먼저, 그 안에서 가까운 순
+    .sort((a, b) => (b.selectable - a.selectable) || (a.d - b.d))
 })
 const hasPos = computed(() => { void tick.value; return !!effectivePos() })
 
@@ -297,6 +298,15 @@ function claimDailyBonus() {
   if (r) { dailyResult.value = r; showDaily.value = false }
 }
 
+// 메뉴 + 내 위치
+const menuOpen = ref(false)
+function recenter() {
+  const p = effectivePos()
+  if (p && leafletMap) leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
+}
+function go(path) { menuOpen.value = false; router.push(path) }
+function doReset() { menuOpen.value = false; resetGame(); router.replace('/') }
+
 // ── 반응형 마커 업데이트 ──────────────────────────────────────────────────────
 watch(
   () => locationList.map(l => `${locStatus(l.id)}-${isAwoken(l.id)}`).join(),
@@ -349,41 +359,45 @@ onBeforeUnmount(() => {
     <!-- Leaflet 지도 컨테이너 -->
     <div ref="mapEl" class="leaflet-map-container" @click.self="selected = null"></div>
 
-    <!-- 시연 모드 배지 -->
-    <div class="demo-badge" v-if="game.demoMode">
-      <span class="msr" style="font-size:13px; color:#7CE1D9">science</span>
-      시연 모드
-    </div>
-
-    <!-- 플레이어 상태 -->
-    <div class="player-status">
-      <div class="level-badge">
-        <span style="font-size:14px; font-weight:900; color:var(--orange)">{{ game.player.level }}</span>
+    <!-- 상단 HUD: 상태(좌) + 컨트롤(우) -->
+    <div class="hud-top">
+      <div class="player-status">
+        <div class="level-badge">
+          <span style="font-size:13px; font-weight:900; color:var(--orange)">{{ game.player.level }}</span>
+        </div>
+        <span class="level-text">Lv.{{ game.player.level }}</span>
+        <div class="status-divider"></div>
+        <span class="msr" style="font-size:18px; color:var(--orange)">diamond</span>
+        <span class="shard-text">{{ game.player.shards }}</span>
+        <span v-if="game.demoMode" class="demo-tag">시연</span>
       </div>
-      <span class="level-text">Lv.{{ game.player.level }}</span>
-      <div class="status-divider"></div>
-      <span class="msr" style="font-size:20px; color:var(--orange)">diamond</span>
-      <span class="shard-text">{{ game.player.shards }} / {{ locationList.length }}</span>
+
+      <div class="hud-ctrls">
+        <button v-if="showDaily" class="hud-btn daily-ctrl" title="오늘의 보너스" @click="claimDailyBonus">
+          <span class="msr" style="font-size:20px; color:var(--orange)">redeem</span>
+        </button>
+        <button class="hud-btn" title="내 위치" @click="recenter">
+          <span class="msr" style="font-size:20px; color:var(--navy)">my_location</span>
+        </button>
+        <button class="hud-btn" title="메뉴" @click="menuOpen = !menuOpen">
+          <span class="msr" style="font-size:20px; color:var(--navy)">{{ menuOpen ? 'close' : 'menu' }}</span>
+        </button>
+      </div>
     </div>
 
-    <!-- 지도 컨트롤 -->
-    <div class="map-controls">
-      <button v-if="showDaily" class="map-ctrl-btn daily-ctrl" title="오늘의 보너스" @click="claimDailyBonus">
-        <span class="msr" style="font-size:22px; color:var(--orange)">redeem</span>
-      </button>
-      <button class="map-ctrl-btn" title="도감" @click="$router.push('/collection')">
-        <span class="msr" style="font-size:22px; color:var(--navy)">auto_stories</span>
-      </button>
-      <button class="map-ctrl-btn" title="운영 현황" @click="$router.push('/dashboard')">
-        <span class="msr" style="font-size:22px; color:var(--navy)">insights</span>
-      </button>
-      <button class="map-ctrl-btn" title="QR 발급" @click="$router.push('/qr-admin')">
-        <span class="msr" style="font-size:22px; color:var(--navy)">qr_code_2</span>
-      </button>
-      <button class="map-ctrl-btn" title="초기화" @click="resetGame(); $router.replace('/')">
-        <span class="msr" style="font-size:22px; color:var(--navy)">refresh</span>
-      </button>
-    </div>
+    <!-- 메뉴 팝오버 -->
+    <Transition name="menu">
+      <div class="menu-pop" v-if="menuOpen">
+        <button class="menu-item" @click="go('/collection')"><span class="msr">auto_stories</span> 도감</button>
+        <button class="menu-item" @click="go('/courses')"><span class="msr">route</span> 코스</button>
+        <div class="menu-sep">운영자</div>
+        <button class="menu-item" @click="go('/dashboard')"><span class="msr">insights</span> 운영 현황</button>
+        <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
+        <button class="menu-item" @click="go('/field-markers')"><span class="msr">photo_camera</span> 타깃 팻말</button>
+        <button class="menu-item danger" @click="doReset"><span class="msr">refresh</span> 처음부터</button>
+      </div>
+    </Transition>
+    <div class="menu-scrim" v-if="menuOpen" @click="menuOpen = false"></div>
 
     <!-- 현재 목표 -->
     <div class="objective">
@@ -528,45 +542,56 @@ onBeforeUnmount(() => {
   z-index: 0;
 }
 
-.demo-badge {
-  position: absolute; left: 88px; top: 56px; z-index: 10;
-  display: flex; align-items: center; gap: 5px;
-  background: #08233FDE; color: var(--white);
-  border-radius: 14px; padding: 5px 14px;
-  font-size: 11px; font-weight: 700;
+/* 상단 HUD */
+.hud-top {
+  position: absolute; left: 12px; right: 12px; top: 50px; z-index: 11;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
 }
-
 .player-status {
-  position: absolute; left: 16px; top: 98px; z-index: 10;
-  display: flex; align-items: center; gap: 10px;
-  background: #FFFFFFF2; border-radius: 20px;
-  padding: 8px 12px; box-shadow: 0 5px 14px #062B4033; height: 58px;
+  display: flex; align-items: center; gap: 8px;
+  background: #FFFFFFF5; border-radius: 22px;
+  padding: 6px 12px 6px 6px; box-shadow: 0 4px 14px #062B4033; height: 44px;
 }
 .level-badge {
-  width: 40px; height: 40px; background: var(--navy);
-  border: 3px solid var(--orange); border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px; background: var(--navy);
+  border: 2.5px solid var(--orange); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
-.level-text { font-size: 14px; font-weight: 900; color: var(--ink); }
-.status-divider { width: 1px; height: 28px; background: #C9DBDE; }
+.level-text { font-size: 13px; font-weight: 900; color: var(--ink); }
+.status-divider { width: 1px; height: 20px; background: #C9DBDE; }
 .shard-text { font-size: 13px; font-weight: 800; color: var(--ink); }
+.demo-tag { background: var(--sky); color: var(--teal-dark); border-radius: 8px; padding: 2px 7px; font-size: 10px; font-weight: 900; margin-left: 2px; }
 
-.map-controls {
-  position: absolute; right: 16px; top: 100px; z-index: 10;
-  display: flex; flex-direction: column; gap: 10px;
-}
-.map-ctrl-btn {
-  width: 48px; height: 48px; background: #FFFFFFF2;
-  border: none; border-radius: 16px;
-  box-shadow: 0 4px 12px #062B4033;
+.hud-ctrls { display: flex; gap: 8px; }
+.hud-btn {
+  width: 44px; height: 44px; background: #FFFFFFF5;
+  border: none; border-radius: 14px; box-shadow: 0 4px 12px #062B4033;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
 
+/* 메뉴 팝오버 */
+.menu-scrim { position: absolute; inset: 0; z-index: 14; }
+.menu-pop {
+  position: absolute; right: 12px; top: 102px; z-index: 15;
+  background: var(--white); border-radius: 16px; padding: 6px;
+  box-shadow: 0 10px 30px #062B4044; display: flex; flex-direction: column; min-width: 160px;
+}
+.menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  background: none; border: none; border-radius: 10px; padding: 11px 12px;
+  font-family: var(--font); font-size: 14px; font-weight: 800; color: var(--ink); cursor: pointer; text-align: left;
+}
+.menu-item .msr { font-size: 19px; color: var(--teal-dark); }
+.menu-item:active { background: var(--sky); }
+.menu-item.danger { color: #D64B5F; }
+.menu-item.danger .msr { color: #D64B5F; }
+.menu-sep { font-size: 10px; font-weight: 800; color: var(--muted); padding: 8px 12px 4px; }
+
 .objective {
-  position: absolute; left: 16px; top: 170px; width: 358px; z-index: 10;
-  background: #08233FF0; border-radius: 20px;
+  position: absolute; left: 12px; right: 12px; top: 104px; z-index: 10;
+  background: #08233FF0; border-radius: 18px;
   box-shadow: 0 6px 16px #00152255;
-  display: flex; gap: 12px; padding: 11px 14px; align-items: center;
+  display: flex; gap: 12px; padding: 10px 14px; align-items: center;
 }
 .obj-step {
   width: 42px; height: 42px; background: var(--orange);
