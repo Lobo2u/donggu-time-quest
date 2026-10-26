@@ -4,6 +4,8 @@ import { ref, computed, reactive, onBeforeUnmount } from 'vue'
 import jsQR from 'jsqr'
 import { abilityPower } from '../store/gameStore.js'
 import { BUDDIES, clueAnswer, lockCode } from '../data/gameData.js'
+import { computeHash, hexToHash, similarity, MATCH_THRESHOLD } from '../utils/imageHash.js'
+import { photoRefs } from '../store/photoRefStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
@@ -19,16 +21,23 @@ const allCollected = computed(() => collectedCount.value === props.mission.targe
 // ── 카메라 스캔 ───────────────────────────────────────────────────────────────
 const camOpen = ref(false)
 const camStatus = ref('idle')
+const camMode = ref('photo')   // 'photo' | 'qr'
 const videoEl = ref(null)
 const canvasEl = ref(null)
 const scanToast = ref(null)
 const revealClue = ref(null)   // 방금 연 단서 (팝업)
 const showManual = ref(false)
 const manualCode = ref('')
+const matching = ref(false)
 let stream = null, rafId = null, lastHandled = 0
+
+// 이 미션 타깃 중 기준 사진이 하나라도 등록됐는지
+const anyPhotoRef = computed(() => props.mission.targets.some(t => photoRefs[t.code]))
 
 async function openCamera() {
   camOpen.value = true; camStatus.value = 'scanning'
+  // 기준 사진이 없으면 QR 모드로 시작
+  if (!anyPhotoRef.value) camMode.value = 'qr'
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     videoEl.value.srcObject = stream; await videoEl.value.play(); scanLoop()
@@ -36,13 +45,41 @@ async function openCamera() {
 }
 function scanLoop() {
   if (!camOpen.value || !videoEl.value || videoEl.value.readyState < 2) { rafId = requestAnimationFrame(scanLoop); return }
-  const c = canvasEl.value, ctx = c.getContext('2d')
-  c.width = videoEl.value.videoWidth; c.height = videoEl.value.videoHeight
-  ctx.drawImage(videoEl.value, 0, 0)
-  const img = ctx.getImageData(0, 0, c.width, c.height)
-  const q = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
-  if (q) handleCode(q.data)
+  // QR 모드에서만 연속 스캔
+  if (camMode.value === 'qr') {
+    const c = canvasEl.value, ctx = c.getContext('2d')
+    c.width = videoEl.value.videoWidth; c.height = videoEl.value.videoHeight
+    ctx.drawImage(videoEl.value, 0, 0)
+    const img = ctx.getImageData(0, 0, c.width, c.height)
+    const q = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
+    if (q) handleCode(q.data)
+  }
   rafId = requestAnimationFrame(scanLoop)
+}
+
+// 사진 인증: 현재 화면을 찍어 기준 사진과 구도 비교
+function capturePhoto() {
+  if (matching.value || !videoEl.value || videoEl.value.readyState < 2) return
+  matching.value = true
+  const shotHash = computeHash(videoEl.value)
+  // 미수집 타깃 중 기준 사진이 있는 것과 비교, 최고 유사도 선택
+  let best = null, bestSim = 0
+  for (const t of props.mission.targets) {
+    if (collected[t.id] || !photoRefs[t.code]) continue
+    const sim = similarity(shotHash, hexToHash(photoRefs[t.code]))
+    if (sim > bestSim) { bestSim = sim; best = t }
+  }
+  setTimeout(() => {
+    matching.value = false
+    if (best && bestSim >= MATCH_THRESHOLD) {
+      flashToast(`인증 성공! (일치도 ${Math.round(bestSim * 100)}%)`)
+      collect(best)
+    } else if (best) {
+      flashToast(`구도가 달라요 (일치도 ${Math.round(bestSim * 100)}%). 각도를 맞춰 다시!`)
+    } else {
+      flashToast('남은 타깃의 기준 사진이 없어요. QR로 전환하거나 운영자 등록이 필요해요')
+    }
+  }, 700) // 스캔 연출
 }
 function handleCode(raw) {
   const now = Date.now(); if (now - lastHandled < 1200) return
@@ -210,14 +247,26 @@ function useAbility() {
     <Transition name="cam">
       <div v-if="camOpen" class="cam-modal">
         <div class="cam-head">
-          <span class="cam-title">타깃 팻말 촬영</span>
+          <span class="cam-title">{{ camMode === 'photo' ? '현장 사진 인증' : '타깃 팻말 스캔' }}</span>
           <button class="cam-close" @click="closeCamera"><span class="msr" style="font-size:24px; color:white">close</span></button>
         </div>
+
+        <!-- 인증 모드 전환 -->
+        <div class="cam-mode">
+          <button class="mode-tab" :class="{ on: camMode === 'photo' }" @click="camMode = 'photo'">
+            <span class="msr" style="font-size:16px">photo_camera</span> 사진 인증
+          </button>
+          <button class="mode-tab" :class="{ on: camMode === 'qr' }" @click="camMode = 'qr'">
+            <span class="msr" style="font-size:16px">qr_code_2</span> QR 스캔
+          </button>
+        </div>
+
         <div class="cam-view" v-if="camStatus === 'scanning'">
           <video ref="videoEl" autoplay muted playsinline></video>
           <canvas ref="canvasEl" style="display:none"></canvas>
-          <div class="cam-frame"><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div></div>
-          <p class="cam-hint">현장의 타깃 팻말(QR)을 화면 안에 맞춰요</p>
+          <div class="cam-frame" :class="{ photo: camMode === 'photo' }"><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div></div>
+          <div v-if="matching" class="scan-overlay"><div class="scan-line2"></div></div>
+          <p class="cam-hint">{{ camMode === 'photo' ? '기준과 같은 구도로 맞추고 촬영해요' : '타깃 팻말(QR)을 화면 안에 맞춰요' }}</p>
         </div>
         <div class="cam-msg" v-else-if="camStatus === 'denied'">
           <span class="msr" style="font-size:48px; color:#9FC1C8">no_photography</span>
@@ -233,7 +282,14 @@ function useAbility() {
             <span class="msr" style="font-size:14px">{{ collected[t.id] ? 'check' : t.icon }}</span>{{ t.label }}
           </div>
         </div>
-        <div class="cam-manual">
+
+        <!-- 사진 인증: 촬영 버튼 -->
+        <button v-if="camMode === 'photo' && camStatus === 'scanning'" class="shutter-btn" :disabled="matching" @click="capturePhoto">
+          <span class="msr" style="font-size:24px; color:var(--navy)">{{ matching ? 'hourglass_top' : 'camera' }}</span>
+          {{ matching ? '구도 비교 중…' : '촬영해서 인증' }}
+        </button>
+
+        <div class="cam-manual" v-if="camMode === 'qr'">
           <button class="manual-toggle" @click="showManual = !showManual">
             <span class="msr" style="font-size:14px">keyboard</span> 시연용 코드 직접 입력
           </button>
@@ -327,7 +383,18 @@ function useAbility() {
 .cam-head { display: flex; align-items: center; justify-content: space-between; }
 .cam-title { font-size: 18px; font-weight: 900; color: white; }
 .cam-close { background: #FFFFFF18; border: none; border-radius: 10px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.cam-mode { display: flex; gap: 8px; background: #FFFFFF14; border-radius: 12px; padding: 4px; }
+.mode-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; background: none; border: none; border-radius: 9px; padding: 8px; font-family: var(--font); font-size: 12px; font-weight: 800; color: #9FC1C8; cursor: pointer; }
+.mode-tab.on { background: var(--teal); color: white; }
+.mode-tab .msr { color: inherit; }
+
 .cam-view { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 1; background: #000; }
+.cam-frame.photo .c { border-color: #7CE1D9; }
+.scan-overlay { position: absolute; inset: 0; overflow: hidden; }
+.scan-line2 { position: absolute; left: 0; right: 0; height: 3px; background: #7CE1D9; box-shadow: 0 0 10px #7CE1D9; animation: scan2 0.7s linear; }
+@keyframes scan2 { from { top: 0; } to { top: 100%; } }
+.shutter-btn { display: flex; align-items: center; justify-content: center; gap: 8px; height: 54px; background: var(--orange); color: var(--navy); border: none; border-radius: 16px; font-family: var(--font); font-size: 16px; font-weight: 900; cursor: pointer; }
+.shutter-btn:disabled { opacity: 0.6; }
 .cam-view video { width: 100%; height: 100%; object-fit: cover; }
 .cam-frame { position: absolute; inset: 0; pointer-events: none; }
 .cam-frame .c { position: absolute; width: 28px; height: 28px; border: 3px solid var(--orange); }

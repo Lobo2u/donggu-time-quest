@@ -393,7 +393,8 @@ onBeforeUnmount(() => {
         <div class="menu-sep">운영자</div>
         <button class="menu-item" @click="go('/dashboard')"><span class="msr">insights</span> 운영 현황</button>
         <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
-        <button class="menu-item" @click="go('/field-markers')"><span class="msr">photo_camera</span> 타깃 팻말</button>
+        <button class="menu-item" @click="go('/field-markers')"><span class="msr">qr_code_2</span> 타깃 팻말</button>
+        <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
         <button class="menu-item danger" @click="doReset"><span class="msr">refresh</span> 처음부터</button>
       </div>
     </Transition>
