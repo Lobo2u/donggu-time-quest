@@ -5,6 +5,7 @@ const deferredPrompt = ref(null)
 const show = ref(false)
 const isIOS = ref(false)
 const showIOSGuide = ref(false)
+const iconUrl = import.meta.env.BASE_URL + 'pwa-icon.svg'
 
 function onBeforeInstall(e) {
   e.preventDefault()
@@ -45,7 +46,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeinstallprompt', onBefore
   <Transition name="slide-up">
     <div v-if="show" class="install-banner">
       <div class="install-icon">
-        <img src="/pwa-icon.svg" alt="앱 아이콘" />
+        <img :src="iconUrl" alt="앱 아이콘" />
       </div>
       <div class="install-text">
         <p class="install-title">홈 화면에 설치</p>
