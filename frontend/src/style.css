@@ -116,6 +116,19 @@ html, body {
   100% { transform: translate(-50%,-50%) scale(1.6); opacity: 0; }
 }
 
+/* 상점 핀 (상권 핀 + 웨이팅) */
+.lf-store { display: flex; flex-direction: column; align-items: center; gap: 2px; pointer-events: auto !important; cursor: pointer; }
+.lf-store-dot {
+  width: 40px; height: 40px; border-radius: 50% 50% 50% 4px; background: var(--white);
+  border: 2.5px solid var(--teal); display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 8px #062B4044; transform: rotate(-2deg);
+}
+.lf-store.hot .lf-store-dot { border-color: #D64B5F; }
+.lf-store-dot .msr { color: var(--teal-dark); }
+.lf-store.hot .lf-store-dot .msr { color: #D64B5F; }
+.lf-store-wait { background: #D64B5F; color: white; border-radius: 8px; padding: 1px 7px; font-family: var(--font); font-size: 10px; font-weight: 900; white-space: nowrap; }
+.lf-store-wait.ok { background: var(--teal); }
+
 /* 야생 시간조각 마커 */
 .lf-wild {
   width: 40px; height: 40px; border-radius: 50%;
