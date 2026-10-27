@@ -25,6 +25,7 @@ let wildMarkers = {}
 let userMarker = null
 let accuracyCircle = null
 let restorationLayers = {}
+let colorPane = null
 let rafId = null
 
 const locationList = Object.values(LOCATIONS)
@@ -109,25 +110,55 @@ function initMap() {
   })
   leafletMap.zoomControl.setPosition('bottomright')
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 19,
-  }).addTo(leafletMap)
+  const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+  const ATTR = '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
 
-  // 지도 색감 오버레이 (게임 분위기)
-  const tintPane = leafletMap.createPane('tintPane')
-  tintPane.style.zIndex = 250
-  tintPane.style.pointerEvents = 'none'
-  tintPane.style.background = 'rgba(12, 109, 117, 0.12)'
+  // 흑백(빛바랜) 베이스 레이어 (기억을 잃은 지도)
+  const grayPane = leafletMap.createPane('grayPane')
+  grayPane.style.zIndex = 190
+  grayPane.style.filter = 'grayscale(1) sepia(0.38) brightness(0.9) contrast(1.08)'
+  L.tileLayer(TILE, { attribution: ATTR, maxZoom: 19, pane: 'grayPane' }).addTo(leafletMap)
+
+  // 컬러 레이어 (복원된 기억) - 완료 구역만 마스크로 드러냄
+  colorPane = leafletMap.createPane('colorPane')
+  colorPane.style.zIndex = 195
+  colorPane.style.pointerEvents = 'none'
+  L.tileLayer(TILE, { maxZoom: 19, pane: 'colorPane' }).addTo(leafletMap)
 
   // 장소 마커 추가
   locationList.forEach(addMarker)
 
   // 지도 클릭 시 선택 해제
   leafletMap.on('click', () => { selected.value = null })
+  // 지도 이동/확대 시 컬러 복원 마스크 갱신
+  leafletMap.on('move zoom moveend zoomend', updateColorMask)
 
-  // 현재 목표 지점으로 이동 (겹친 마커 중 활성 마커를 또렷하게)
   focusObjective()
+  updateColorMask()
+}
+
+// 완료한 장소 주변만 컬러로 드러나도록 colorPane 에 radial-gradient 마스크 적용
+function updateColorMask() {
+  if (!colorPane || !leafletMap) return
+  const done = locationList.filter(l => locStatus(l.id) === 'complete')
+  if (done.length === locationList.length && done.length > 0) {
+    colorPane.style.webkitMaskImage = 'none'
+    colorPane.style.maskImage = 'none'
+    return
+  }
+  if (!done.length) {
+    const none = 'radial-gradient(circle 0px at -100px -100px, #000, #000)'
+    colorPane.style.webkitMaskImage = none
+    colorPane.style.maskImage = none
+    return
+  }
+  const R = 150 // 복원 반경(px)
+  const grads = done.map(l => {
+    const p = leafletMap.latLngToContainerPoint([l.lat, l.lng])
+    return `radial-gradient(circle ${R}px at ${Math.round(p.x)}px ${Math.round(p.y)}px, #000 55%, transparent 100%)`
+  }).join(', ')
+  colorPane.style.webkitMaskImage = grads
+  colorPane.style.maskImage = grads
 }
 
 // 활성 목표(진행중/탐험가능) 위치로 지도 중심 이동. 없으면 전체 보기
@@ -266,6 +297,7 @@ const objective = computed(() => {
   return '모든 장소 탐험 완료!'
 })
 const completedCount = computed(() => locationList.filter(l => locStatus(l.id) === 'complete').length)
+const restorePct = computed(() => Math.round(completedCount.value / locationList.length * 100))
 const guideName = computed(() => game.guide === 'jungang' ? '중앙이' : '마중이')
 const guideMsg  = computed(() => {
   const avail = locationList.find(l => ['available','in_progress'].includes(locStatus(l.id)))
@@ -315,6 +347,7 @@ watch(
       updateMarker(loc)
       if (locStatus(loc.id) === 'complete') addRestorationEffect(loc.id)
     })
+    updateColorMask()
   },
   { deep: true },
 )
@@ -406,7 +439,7 @@ onBeforeUnmount(() => {
         <span class="msr" style="font-size:18px; color:var(--navy)">flag</span>
       </div>
       <div class="obj-texts">
-        <span class="obj-label">현재 목표 · {{ completedCount }} / {{ locationList.length }} 완료</span>
+        <span class="obj-label">기억 복원 {{ restorePct }}% · {{ completedCount }} / {{ locationList.length }}곳</span>
         <span class="obj-action">{{ objective }}</span>
         <span class="obj-next">지도 핀을 눌러 장소를 선택하세요</span>
       </div>
