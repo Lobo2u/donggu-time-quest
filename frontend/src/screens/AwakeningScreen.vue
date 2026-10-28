@@ -15,7 +15,7 @@ const locationId = loc?.id
 
 if (!buddy || !save) router.replace('/map')
 
-// 각성 연출 단계
+// 강화 연출 단계
 const phase = ref('charge')  // charge | burst | reveal | done
 const particles = Array.from({ length: 16 }, (_, i) => ({
   id: i,
@@ -52,7 +52,7 @@ onMounted(() => {
 
     <!-- 충전 단계 -->
     <div class="phase-charge" v-if="phase === 'charge'">
-      <p class="charge-label">각성 에너지 충전 중…</p>
+      <p class="charge-label">강화 에너지 충전 중…</p>
       <div class="charge-ring">
         <div class="charge-fill"></div>
       </div>
@@ -75,7 +75,7 @@ onMounted(() => {
       <!-- 텍스트 -->
       <Transition name="pop">
         <div class="reveal-texts" v-if="phase === 'reveal' || phase === 'done'">
-          <p class="awaken-kicker">각성 완료!</p>
+          <p class="awaken-kicker">강화 완료!</p>
           <h2 class="awaken-name">{{ buddy.name }}</h2>
           <p class="awaken-sub">{{ buddy.awokenSubtitle }}</p>
         </div>

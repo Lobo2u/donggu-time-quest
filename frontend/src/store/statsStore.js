@@ -25,7 +25,7 @@ watch(
   () => { try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)) } catch {} },
 )
 
-// 이벤트 종류: visit(방문/도착) · awaken(QR각성) · coupon(쿠폰발급) · collect(버디수집)
+// 이벤트 종류: visit(방문/도착) · awaken(QR강화) · coupon(쿠폰발급) · collect(버디수집)
 export function track(type, locationId) {
   stats.events.push({ type, locationId, ts: Date.now() })
   try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)) } catch {}
@@ -71,12 +71,12 @@ export function hourlyDistribution() {
   return h
 }
 
-// 전환 퍼널: 방문 → 각성 → 쿠폰
+// 전환 퍼널: 방문 → 강화 → 쿠폰
 export function funnel() {
   const t = totals()
   return [
     { stage: '장소 방문', count: t.visit },
-    { stage: '현장 각성(QR)', count: t.awaken },
+    { stage: '현장 강화(QR)', count: t.awaken },
     { stage: '쿠폰 발급', count: t.coupon },
   ]
 }
@@ -106,7 +106,7 @@ export function seedDemoData() {
       const locId = weighted[Math.floor(Math.random() * weighted.length)]
 
       events.push({ type: 'visit', locationId: locId, ts: ts.getTime() })
-      // 방문자 중 일부가 각성(QR) → 그 중 일부가 쿠폰
+      // 방문자 중 일부가 강화(QR) → 그 중 일부가 쿠폰
       if (Math.random() < 0.62) {
         events.push({ type: 'awaken', locationId: locId, ts: ts.getTime() + 60000 })
         events.push({ type: 'collect', locationId: locId, ts: ts.getTime() + 30000 })

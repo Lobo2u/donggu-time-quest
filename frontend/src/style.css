@@ -1,14 +1,18 @@
 :root {
-  --navy:        #08233F;
-  --teal:        #0E9F9A;
-  --teal-dark:   #08756F;
+  --navy:        #3E5408;   /* 진한 올리브 (기존 네이비 자리) */
+  --teal:        #8DB02A;   /* 라임 (주요 강조) */
+  --teal-dark:   #4F6B0A;   /* 올리브 */
   --orange:      #FF9F1C;
   --orange-soft: #FFF1D6;
-  --sky:         #DFF7F4;
-  --paper:       #F8FCFB;
+  --sky:         #F6F9E8;   /* 연한 라임 카드 배경 */
+  --paper:       #FAFBF5;
   --white:       #FFFFFF;
-  --muted:       #61788C;
-  --ink:         #0B2038;
+  --muted:       #6B6B6B;
+  --ink:         #222222;
+  --lime:        #A5BF2A;   /* 헤더 · 브랜드 */
+  --blue:        #4A5FE7;   /* 주요 CTA */
+  --locked:      #F0F0F0;   /* 잠김 · 비활성 */
+  --locked-ink:  #8A8A8A;
   --font:        'Noto Sans KR', sans-serif;
   --r-md:        18px;
   --gap:         12px;

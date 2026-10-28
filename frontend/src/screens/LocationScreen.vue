@@ -188,9 +188,9 @@ onMounted(() => {
             <span class="msr" style="font-size:16px; color:var(--teal)">check_circle</span>
             현장 QR 인증 완료!
           </p>
-          <p class="qr-checkin-title" v-else>현장 QR 인증 시 버디 각성</p>
+          <p class="qr-checkin-title" v-else>현장 QR 인증 시 캐릭터 강화</p>
           <p class="qr-checkin-desc" v-if="!game.checkIns?.[locationId]">
-            장소에 부착된 QR을 스캔하면 {{ loc.name }}의 시간 친구가 각성해요
+            가게에 붙은 QR을 스캔하면 {{ loc.name }}의 시간 친구가 강화돼요
           </p>
           <p class="qr-checkin-desc" v-else>버디 능력이 강화됐어요</p>
         </div>
@@ -200,7 +200,7 @@ onMounted(() => {
         class="qr-scan-btn"
         @click="$router.push('/qrscan?from=' + locationId)"
       >스캔</button>
-      <div v-else class="awoken-pill">각성됨</div>
+      <div v-else class="awoken-pill">강화 완료</div>
     </div>
 
     <!-- 실제 장소 안내 -->

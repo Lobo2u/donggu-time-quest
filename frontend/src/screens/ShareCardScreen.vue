@@ -19,10 +19,10 @@ const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,
 const shared = ref(false)
 
 async function shareCard() {
-  const text = `대전 동구 TIME QUEST\n나는 오늘 ${loc?.name}에서 ${buddy.name}을(를) 각성시켰어요! 🌟\n동구의 기억을 함께 되살리는 탐험을 시작해보세요.`
+  const text = `대전 동구 TIME QUEST\n나는 오늘 ${loc?.name}에서 ${buddy.name}을(를) 강화했어요! 🌟\n동구의 기억을 함께 되살리는 탐험을 시작해보세요.`
   if (navigator.share) {
     try {
-      await navigator.share({ title: '동구 TIME QUEST - 각성 완료!', text })
+      await navigator.share({ title: '동구 TIME QUEST - 강화 완료!', text })
       shared.value = true
     } catch {}
   } else {
@@ -52,10 +52,10 @@ async function shareCard() {
         <span class="brand-dot"></span>
       </div>
 
-      <!-- 각성 배지 -->
+      <!-- 강화 배지 -->
       <div class="awaken-badge-large">
         <span class="msr" style="font-size:16px; color:var(--navy)">stars</span>
-        현장 각성 완료
+        현장 강화 완료
       </div>
 
       <!-- 버디 SVG -->

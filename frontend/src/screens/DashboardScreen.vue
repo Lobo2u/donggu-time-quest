@@ -42,7 +42,7 @@ const peakHour = computed(() => {
 
 const statCards = computed(() => [
   { label: '총 방문', value: t.value.visit, icon: 'person_pin_circle', color: '#FF9F1C' },
-  { label: '현장 각성', value: t.value.awaken, icon: 'auto_awesome', color: '#0E9F9A' },
+  { label: '현장 강화', value: t.value.awaken, icon: 'auto_awesome', color: '#0E9F9A' },
   { label: '쿠폰 발급', value: t.value.coupon, icon: 'local_offer', color: '#D64B5F' },
   { label: '버디 수집', value: t.value.collect, icon: 'pets', color: '#673AB7' },
 ])
@@ -100,7 +100,7 @@ function barColor(i) { return locColors[i % locColors.length] }
             <span class="ins-value">{{ peakHour }}</span>
           </div>
           <div class="insight">
-            <span class="ins-label">각성 전환율</span>
+            <span class="ins-label">강화 전환율</span>
             <span class="ins-value">{{ conversionRate }}%</span>
           </div>
         </div>
@@ -189,7 +189,7 @@ function barColor(i) { return locColors[i % locColors.length] }
           <p class="pitch-title">🤝 파트너십 가치 제안</p>
           <p class="pitch-text">
             게임 플레이어가 <strong>{{ t.visit.toLocaleString() }}회</strong> 현장을 방문하고,
-            그중 <strong>{{ conversionRate }}%</strong>가 각성 인증,
+            그중 <strong>{{ conversionRate }}%</strong>가 강화 인증,
             <strong>{{ t.coupon.toLocaleString() }}건</strong>의 쿠폰이 발급됐습니다.
             방문 데이터를 기반으로 지역 상점과 성과 기반 파트너십을 확장할 수 있습니다.
           </p>

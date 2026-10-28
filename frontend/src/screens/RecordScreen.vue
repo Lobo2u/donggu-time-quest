@@ -46,7 +46,7 @@ function confirmReset() {
         <div class="stat-item">
           <span class="msr stat-icon">diamond</span>
           <span class="stat-value">{{ game.player.shards }}</span>
-          <span class="stat-label">시간 조각</span>
+          <span class="stat-label">단서 조각</span>
         </div>
         <div class="stat-item">
           <span class="msr stat-icon">auto_stories</span>

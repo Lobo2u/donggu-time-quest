@@ -309,7 +309,7 @@ const wildToast = ref(null)
 function tryCollectWild(id) {
   const got = collectWild(id)
   if (got) {
-    wildToast.value = `야생 시간 조각 +${got}`
+    wildToast.value = `야생 단서 조각 +${got}`
     setTimeout(() => { wildToast.value = null }, 1600)
     // 다 주웠으면 주변에 새로 스폰
     if (!geo.wildSpots.length) setTimeout(() => spawnWildNear(effectivePos(), 3), 800)
@@ -371,6 +371,7 @@ function claimDailyBonus() {
 
 // 메뉴 + 내 위치
 const menuOpen = ref(false)
+const isDev = import.meta.env.DEV
 function recenter() {
   const p = effectivePos()
   if (p && leafletMap) leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
@@ -463,12 +464,16 @@ onBeforeUnmount(() => {
       <div class="menu-pop" v-if="menuOpen">
         <button class="menu-item" @click="go('/collection')"><span class="msr">auto_stories</span> 도감</button>
         <button class="menu-item" @click="go('/courses')"><span class="msr">route</span> 코스</button>
-        <div class="menu-sep">운영자</div>
-        <button class="menu-item" @click="go('/dashboard')"><span class="msr">insights</span> 운영 현황</button>
-        <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
-        <button class="menu-item" @click="go('/field-markers')"><span class="msr">qr_code_2</span> 타깃 팻말</button>
-        <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
-        <button class="menu-item danger" @click="doReset"><span class="msr">refresh</span> 처음부터</button>
+        <button class="menu-item" @click="go('/grade')"><span class="msr">workspace_premium</span> 등급 혜택</button>
+        <!-- 운영자 메뉴는 개발 빌드에서만 노출 (사용자에게는 보이지 않음) -->
+        <template v-if="isDev">
+          <div class="menu-sep">운영자</div>
+          <button class="menu-item" @click="go('/dashboard')"><span class="msr">insights</span> 운영 현황</button>
+          <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
+          <button class="menu-item" @click="go('/field-markers')"><span class="msr">qr_code_2</span> 타깃 팻말</button>
+          <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
+          <button class="menu-item danger" @click="doReset"><span class="msr">refresh</span> 처음부터</button>
+        </template>
       </div>
     </Transition>
     <div class="menu-scrim" v-if="menuOpen" @click="menuOpen = false"></div>
@@ -490,7 +495,7 @@ onBeforeUnmount(() => {
       <div v-if="dailyResult" class="daily-result" @click="dailyResult = null">
         <div class="daily-result-card">
           <span class="msr" style="font-size:44px; color:var(--orange)">diamond</span>
-          <p class="dr-title">+{{ dailyResult.reward }} 시간 조각</p>
+          <p class="dr-title">+{{ dailyResult.reward }} 단서 조각</p>
           <p class="dr-streak">{{ dailyResult.streak }}일 연속 탐험 중! 🔥</p>
           <p class="dr-hint">연속 출석할수록 보너스가 커져요 (최대 +5)</p>
           <button class="dr-btn" @click.stop="dailyResult = null">확인</button>
@@ -619,7 +624,7 @@ onBeforeUnmount(() => {
           <button class="small-btn" @click="$router.push('/collection')">도감 보기</button>
           <button class="small-btn" v-if="!isAwoken(selected.id)"
             style="background:var(--orange); color:var(--navy)"
-            @click="$router.push('/qrscan')">QR 각성</button>
+            @click="$router.push('/qrscan')">캐릭터 강화</button>
         </div>
 
         <div v-else>
