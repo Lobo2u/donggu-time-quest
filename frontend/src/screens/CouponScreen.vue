@@ -65,10 +65,10 @@ async function share() {
           <span>동구 TIME QUEST × 파트너</span>
         </div>
 
-        <!-- 각성 배지 -->
+        <!-- 강화 배지 -->
         <div class="awoken-proof">
           <span class="msr" style="font-size:14px; color:var(--navy)">verified</span>
-          {{ loc.name }} 현장 방문 인증 완료 · {{ buddy?.name }} 각성
+          {{ loc.name }} 현장 방문 인증 완료 · {{ buddy?.name }} 강화
         </div>
 
         <!-- 상점 정보 -->

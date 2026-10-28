@@ -47,7 +47,7 @@ function medal(rank) {
         <span class="my-rank">{{ board.find(e => e.isMe)?.rank }}위</span>
       </div>
       <div class="my-score">{{ playerScore() }}<span>점</span></div>
-      <p class="score-note">점수 = 시간조각×3 + 완주코스×50 + 동료×20 + 레벨×10</p>
+      <p class="score-note">점수 = 단서조각×3 + 완주코스×50 + 동료×20 + 레벨×10</p>
     </div>
 
     <!-- 랭킹 리스트 -->

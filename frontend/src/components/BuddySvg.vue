@@ -8,7 +8,7 @@ const props = defineProps({
   mood:    { type: String,  default: 'idle' }, // idle | shy | happy | excited
   size:    { type: Number,  default: 120 },
   variant: { type: String,  default: 'sojo' }, // sojo | jungja | heomi | indo
-  awoken:  { type: Boolean, default: false },   // 각성 상태: 왕관 + 추가 이펙트
+  awoken:  { type: Boolean, default: false },   // 강화 상태: 왕관 + 추가 이펙트
 })
 
 const palette = {
@@ -77,7 +77,7 @@ const isMajung = computed(() => props.variant === 'majung')
     <circle cx="60" cy="24" r="6.5" fill="#F5B301" stroke="#C98A00" stroke-width="1" />
     <text x="60" y="27.5" text-anchor="middle" font-size="7" font-weight="900" fill="#3A2A00" font-family="sans-serif">ㅈ</text>
 
-    <!-- 각성 왕관 -->
+    <!-- 강화 왕관 -->
     <template v-if="awoken">
       <polygon points="60,2 65,11 76,9 68,16 72,26 60,19 48,26 52,16 44,9 55,11"
         fill="#FFD700" opacity="0.95" />
@@ -205,7 +205,7 @@ const isMajung = computed(() => props.variant === 'majung')
     <circle cx="60" cy="43" r="6" fill="#F5B301" stroke="#C98A00" stroke-width="1" />
     <text x="60" y="46" text-anchor="middle" font-size="7" font-weight="900" fill="#1E3250" font-family="sans-serif">마</text>
 
-    <!-- 각성 왕관 -->
+    <!-- 강화 왕관 -->
     <template v-if="awoken">
       <polygon points="60,6 65,15 76,13 68,20 72,30 60,23 48,30 52,20 44,13 55,15"
         fill="#FFD700" opacity="0.95" />
@@ -296,7 +296,7 @@ const isMajung = computed(() => props.variant === 'majung')
     <!-- 안테나 -->
     <line x1="60" y1="27" x2="60" y2="42"
       :stroke="c.glow" stroke-width="2.5" stroke-linecap="round" />
-    <!-- 각성 왕관 -->
+    <!-- 강화 왕관 -->
     <template v-if="awoken">
       <polygon points="60,4 64,13 74,11 67,18 70,28 60,22 50,28 53,18 46,11 56,13"
         fill="#FFD700" opacity="0.95" />

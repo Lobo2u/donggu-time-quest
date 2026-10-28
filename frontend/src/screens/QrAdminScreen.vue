@@ -47,7 +47,7 @@ function printPage() { window.print() }
 
       <div class="qa-guide no-print">
         <span class="msr" style="font-size:16px; color:var(--teal)">info</span>
-        <p>각 장소에 해당 QR을 인쇄해 부착하세요. 방문자가 스캔하면 버디 각성 + 쿠폰이 발급됩니다.</p>
+        <p>각 장소에 해당 QR을 인쇄해 부착하세요. 방문자가 스캔하면 캐릭터 강화 + 쿠폰이 발급됩니다.</p>
       </div>
 
       <div class="qr-grid">
@@ -58,7 +58,7 @@ function printPage() { window.print() }
           <img v-if="qrImages[loc.id]" :src="qrImages[loc.id]" class="qr-img" :alt="loc.name + ' QR'" />
           <div v-else class="qr-loading">생성 중…</div>
           <p class="qr-code-text">{{ loc.qrCode }}</p>
-          <p class="qr-instruction">여기에서 QR을 스캔하고<br>시간 친구를 각성시켜요!</p>
+          <p class="qr-instruction">여기에서 QR을 스캔하고<br>시간 친구를 강화해요!</p>
         </div>
       </div>
 

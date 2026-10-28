@@ -161,7 +161,7 @@ export function claimDaily() {
   return { reward, streak }
 }
 
-// ── 버디 능력 강도 (레벨 + 각성) ──────────────────────────────────────────────
+// ── 버디 능력 강도 (레벨 + 강화) ──────────────────────────────────────────────
 // 미션에서 실제로 적용되는 힌트/공개 개수를 반환 (1~3)
 const BUDDY_LOCATION = { sojo: 'sojedom', jungja: 'jungang', heomi: 'heredi', indo: 'indong' }
 
@@ -174,7 +174,7 @@ export function abilityPower(buddyId) {
   if (!b || !b.owned) return 0
   let power = 1
   if (b.level >= 3) power += 1        // 버디 레벨 3 이상
-  if (isBuddyAwoken(buddyId)) power += 1  // 현장 각성
+  if (isBuddyAwoken(buddyId)) power += 1  // 현장 강화
   return Math.min(power, 3)
 }
 

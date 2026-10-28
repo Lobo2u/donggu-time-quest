@@ -12,13 +12,13 @@ export const geo = reactive({
   demoPos: null,      // 시연용 가상 위치 { lat, lng }
   walkedMeters: 0,    // 누적 이동 거리
   walkRewardShards: 0, // 걷기로 받은 조각 누계
-  wildSpots: [],      // 야생 시간조각 [{ id, lat, lng }]
+  wildSpots: [],      // 야생 단서조각 [{ id, lat, lng }]
 })
 
 const WILD_COLLECT_RADIUS = 25 // m
 let wildSeq = 0
 
-// 기준 위치 주변에 야생 시간조각 스폰 (반경 40~140m)
+// 기준 위치 주변에 야생 단서조각 스폰 (반경 40~140m)
 export function spawnWildNear(center, count = 3) {
   if (!center) return
   const spots = []
@@ -124,7 +124,7 @@ export function stopWatch() {
   lastWalkPos = null
 }
 
-// 걷기 거리 → 100m마다 시간 조각 1개
+// 걷기 거리 → 100m마다 단서 조각 1개
 export function accumulateWalk(meters) {
   geo.walkedMeters += meters
   const earned = Math.floor(geo.walkedMeters / 100)
