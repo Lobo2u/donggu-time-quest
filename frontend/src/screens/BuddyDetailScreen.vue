@@ -16,10 +16,10 @@ if (!buddy || !save?.owned) router.replace('/collection')
 const locationId = Object.values(LOCATIONS).find(l => l.buddyId === buddyId)?.id
 const awoken = computed(() => isBuddyAwoken(buddyId))
 const power = computed(() => abilityPower(buddyId))
-// 다음 레벨/각성 강화 조건 안내
+// 다음 레벨/강화 조건 안내
 const nextBoost = computed(() => {
   if (save.level < 3) return `Lv.3 달성 시 능력 강화 (현재 Lv.${save.level})`
-  if (!awoken.value) return '현장 QR 각성 시 능력 강화'
+  if (!awoken.value) return '매장 QR을 찍으면 능력이 강해져요'
   return '최대 강화 상태예요!'
 })
 

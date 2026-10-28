@@ -26,7 +26,7 @@ onBeforeUnmount(() => { game.lastReward = null })
     <p class="kicker">MEMORY RESTORED</p>
     <h1 class="main-title">기억 한 장면이<br>돌아왔어요!</h1>
 
-    <!-- 시간 조각 육각형 -->
+    <!-- 단서 조각 육각형 -->
     <div class="shard-wrap">
       <div class="shard-hex"></div>
     </div>
@@ -50,7 +50,7 @@ onBeforeUnmount(() => { game.lastReward = null })
         <div class="reward-item">
           <span class="msr" style="font-size:22px; color:var(--orange)">diamond</span>
           <div class="reward-texts">
-            <span class="reward-label">시간 조각</span>
+            <span class="reward-label">단서 조각</span>
             <span class="reward-value">+{{ reward.shardsGained }}</span>
           </div>
         </div>

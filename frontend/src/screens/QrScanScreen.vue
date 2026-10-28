@@ -112,7 +112,7 @@ onBeforeUnmount(stopCamera)
         <div class="corner bl"></div><div class="corner br"></div>
       </div>
       <div class="scan-line"></div>
-      <p class="scan-hint">장소에 부착된 QR 코드를 화면 안에 맞춰요</p>
+      <p class="scan-hint">가게에 붙은 QR 코드를 화면 안에 맞춰요</p>
     </div>
 
     <!-- 초기 상태 -->
@@ -125,7 +125,7 @@ onBeforeUnmount(stopCamera)
     <div class="status-card success" v-else-if="status === 'success'">
       <span class="msr" style="font-size:56px; color:var(--teal)">check_circle</span>
       <p class="status-title">{{ scannedLocation?.name }} 인증 완료!</p>
-      <p class="status-sub">버디 각성을 시작해요…</p>
+      <p class="status-sub">캐릭터 강화을 시작해요…</p>
     </div>
 
     <!-- 권한 거부 -->

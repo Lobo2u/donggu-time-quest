@@ -112,7 +112,7 @@ const myScore = computed(() => playerScore())
           <span class="msr" style="font-size:48px; color:var(--orange)">military_tech</span>
           <p class="rp-title">코스 완주!</p>
           <p class="rp-badge">{{ rewardPopup.badge }} 뱃지 획득</p>
-          <p class="rp-reward">+{{ rewardPopup.shards }} 시간 조각</p>
+          <p class="rp-reward">+{{ rewardPopup.shards }} 단서 조각</p>
           <button class="rp-btn" @click="rewardPopup = null">확인</button>
         </div>
       </div>

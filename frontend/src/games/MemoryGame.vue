@@ -6,7 +6,7 @@ import { game, abilityPower } from '../store/gameStore.js'
 const props = defineProps({ mission: Object })
 const emit  = defineEmits(['win'])
 
-// 소조 능력 강도 (레벨/각성에 따라 공개 카드 수 1~3)
+// 소조 능력 강도 (레벨/강화에 따라 공개 카드 수 1~3)
 const revealCount = computed(() => Math.max(1, abilityPower('sojo')))
 
 function shuffle(arr) {
@@ -71,7 +71,7 @@ function useBuddyAbility() {
   const hidden = deck.value.filter(c => c.state === 'hidden')
   if (!hidden.length) return
   hintUsed.value = true
-  // 능력 강도만큼 카드 공개 (레벨/각성 시 더 많이)
+  // 능력 강도만큼 카드 공개 (레벨/강화 시 더 많이)
   const shuffled = [...hidden].sort(() => Math.random() - 0.5)
   const targets = shuffled.slice(0, revealCount.value)
   targets.forEach(t => { t.state = 'hint' })

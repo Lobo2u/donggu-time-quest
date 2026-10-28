@@ -26,8 +26,8 @@ const steps = [
   },
   {
     icon: 'qr_code_scanner', variant: null,
-    title: '현장 QR로 각성',
-    body: '실제 장소에 가서 QR을 스캔하면 동료가 각성해 능력이 강해지고, 방문 카드·쿠폰을 받아요!',
+    title: '매장 QR로 캐릭터 강화',
+    body: '실제 장소에 가서 QR을 스캔하면 동료가 강화돼 능력이 강해지고, 방문 카드·쿠폰을 받아요!',
   },
 ]
 

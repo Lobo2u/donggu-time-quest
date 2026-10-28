@@ -21,6 +21,7 @@ import CollectionScreen from '../screens/CollectionScreen.vue'
 import BuddyDetailScreen from '../screens/BuddyDetailScreen.vue'
 import RecordScreen     from '../screens/RecordScreen.vue'
 import EndingScreen     from '../screens/EndingScreen.vue'
+import GradeScreen      from '../screens/GradeScreen.vue'
 
 export default createRouter({
   history: createWebHashHistory(),
@@ -47,5 +48,6 @@ export default createRouter({
     { path: '/courses',              component: CoursesScreen },
     { path: '/certificate/:courseId',component: CertificateScreen },
     { path: '/ranking',              component: RankingScreen },
+    { path: '/grade',                component: GradeScreen },
   ],
 })
