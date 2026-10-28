@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { stats, totals, byLocation, dailyTrend, funnel, hourlyDistribution, seedDemoData, clearStats } from '../store/statsStore.js'
+import { stats, totals, byLocation, dailyTrend, funnel, hourlyDistribution, seedDemoData, clearStats, segmentFlow, flowInsight } from '../store/statsStore.js'
 
 const router = useRouter()
 
@@ -15,6 +15,9 @@ const hasData = computed(() => stats.events.length > 0)
 const maxLoc = computed(() => Math.max(1, ...locBars.value.map(l => l.count)))
 const maxTrend = computed(() => Math.max(1, ...trend.value.map(d => d.count)))
 const maxHour = computed(() => Math.max(1, ...hourly.value))
+const segments = computed(() => segmentFlow())
+const maxSegFlow = computed(() => Math.max(1, ...segments.value.map(s => s.flow)))
+const insight = computed(() => flowInsight())
 
 // 전환율
 const conversionRate = computed(() => {
@@ -160,6 +163,27 @@ function barColor(i) { return locColors[i % locColors.length] }
           <div class="hour-axis"><span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>23시</span></div>
         </div>
 
+        <!-- B2G 도보 동선 -->
+        <div class="panel">
+          <p class="panel-title">도보 동선 · 구간 전환 (B2G)</p>
+          <div class="flow-map">
+            <template v-for="(s, i) in segments" :key="s.from">
+              <div class="flow-node">{{ s.fromName }}</div>
+              <div class="flow-link">
+                <div class="flow-bar" :style="{ height: (6 + s.flow / maxSegFlow * 16) + 'px' }"></div>
+                <span class="flow-rate">{{ s.rate }}%</span>
+                <span class="flow-count">{{ s.flow }}명</span>
+              </div>
+              <div v-if="i === segments.length - 1" class="flow-node">{{ s.toName }}</div>
+            </template>
+          </div>
+          <div v-if="insight" class="flow-insight">
+            <span class="msr" style="font-size:16px; color:var(--orange)">lightbulb</span>
+            <p>{{ insight.suggestion }}</p>
+          </div>
+          <p class="panel-note">m단위 도보 동선·구간 전환율 → 동구청 도시재생(인프라·동선 최적화) 데이터로 공급</p>
+        </div>
+
         <!-- 파트너십 가치 -->
         <div class="pitch-panel">
           <p class="pitch-title">🤝 파트너십 가치 제안</p>
@@ -275,6 +299,15 @@ function barColor(i) { return locColors[i % locColors.length] }
 .hour-axis { display: flex; justify-content: space-between; margin-top: 6px; font-size: 9px; font-weight: 700; color: var(--muted); }
 
 /* 피치 */
+/* 도보 동선 */
+.flow-map { display: flex; align-items: center; gap: 2px; }
+.flow-node { background: var(--navy); color: white; border-radius: 10px; padding: 8px 6px; font-size: 11px; font-weight: 900; text-align: center; flex-shrink: 0; width: 56px; word-break: keep-all; line-height: 1.2; }
+.flow-link { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 2px; }
+.flow-bar { width: 100%; background: linear-gradient(90deg, var(--teal), var(--orange)); border-radius: 3px; min-height: 6px; }
+.flow-rate { font-size: 12px; font-weight: 900; color: var(--teal-dark); }
+.flow-count { font-size: 9px; font-weight: 700; color: var(--muted); }
+.flow-insight { display: flex; align-items: flex-start; gap: 6px; background: var(--orange-soft); border-radius: 12px; padding: 10px 12px; margin-top: 10px; font-size: 12px; font-weight: 700; color: var(--ink); line-height: 1.4; word-break: keep-all; }
+
 .pitch-panel { background: var(--navy); border-radius: 18px; padding: 16px; }
 .pitch-title { font-size: 14px; font-weight: 900; color: var(--orange); margin-bottom: 8px; }
 .pitch-text { font-size: 13px; font-weight: 700; color: #DCEAE9; line-height: 1.6; word-break: keep-all; }

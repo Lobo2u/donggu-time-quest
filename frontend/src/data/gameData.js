@@ -318,6 +318,24 @@ export const BUDDY_FALLBACKS = {
   },
 }
 
+// ── 상권 핀 (No-search 큐레이션 + 실시간 웨이팅) ──────────────────────────────
+// 게임으로 활성화된 구역의 제휴 매장만 핀으로 노출. 핫플 + 골목 소상공인.
+// 데모용 가상 정보이며 실제 제휴 상점이 아닙니다.
+export const STORES = [
+  // 소제동
+  { id: 'soje-cafe',   locationId: 'sojedom', name: '소제동 카페 기억',  category: '카페',   icon: 'local_cafe',   offer: '음료 1잔 10% 할인',   hot: true,  lat: 36.3346, lng: 127.4389, waitBase: 11 },
+  { id: 'soje-bunsik', locationId: 'sojedom', name: '골목 분식 할매네',  category: '분식',   icon: 'ramen_dining', offer: '떡볶이 1인분 서비스', hot: false, lat: 36.3330, lng: 127.4368, waitBase: 1 },
+  // 중앙시장
+  { id: 'jung-gukbap', locationId: 'jungang', name: '중앙시장 순대국밥', category: '식당',   icon: 'soup_kitchen', offer: '국밥 1,000원 할인',   hot: true,  lat: 36.3285, lng: 127.4319, waitBase: 6 },
+  { id: 'jung-ppang',  locationId: 'jungang', name: '노포 찐빵집',       category: '간식',   icon: 'bakery_dining', offer: '찐빵 2개 서비스',    hot: false, lat: 36.3271, lng: 127.4301, waitBase: 0 },
+  // 한의약거리
+  { id: 'here-tea',    locationId: 'heredi',  name: '약초 찻집',         category: '전통차', icon: 'emoji_food_beverage', offer: '쌍화차 500원 할인', hot: false, lat: 36.3270, lng: 127.4303, waitBase: 2 },
+  { id: 'here-herb',   locationId: 'heredi',  name: '한의약거리 약재상회', category: '약재',  icon: 'medication',   offer: '구매 5% 적립',       hot: false, lat: 36.3256, lng: 127.4287, waitBase: 0 },
+  // 인동시장
+  { id: 'indo-tteok',  locationId: 'indong',  name: '인동시장 떡방앗간', category: '전통식품', icon: 'cake',       offer: '떡류 500원 할인',     hot: false, lat: 36.3307, lng: 127.4373, waitBase: 1 },
+  { id: 'indo-noodle', locationId: 'indong',  name: '손칼국수 노포',     category: '식당',   icon: 'ramen_dining', offer: '칼국수 곱빼기 무료',  hot: true,  lat: 36.3293, lng: 127.4357, waitBase: 4 },
+]
+
 // ── 미션투어 코스 (스팟을 테마별로 묶은 투어) ───────────────────────────────
 export const COURSES = {
   'donggu-day': {

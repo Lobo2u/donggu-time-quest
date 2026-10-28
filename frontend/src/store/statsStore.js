@@ -112,11 +112,52 @@ export function seedDemoData() {
         events.push({ type: 'collect', locationId: locId, ts: ts.getTime() + 30000 })
         if (Math.random() < 0.48) events.push({ type: 'coupon', locationId: locId, ts: ts.getTime() + 120000 })
       }
+
+      // 도보 동선: 진입 지점부터 코스를 따라 이어 걷기 (연속 확률 감소)
+      let idx = LOCATION_IDS.indexOf(locId)
+      let t = ts.getTime() + 15 * 60000
+      while (idx < LOCATION_IDS.length - 1 && Math.random() < 0.56) {
+        const from = LOCATION_IDS[idx], to = LOCATION_IDS[idx + 1]
+        events.push({ type: 'segment', from, to, ts: t })
+        events.push({ type: 'visit', locationId: to, ts: t + 60000 })
+        idx++; t += 20 * 60000
+      }
     }
   }
   events.sort((a, b) => a.ts - b.ts)
   stats.events = events
   try { localStorage.setItem(STATS_KEY, JSON.stringify(stats)) } catch {}
+}
+
+// 도보 동선: 코스 연속 구간별 통행량 + 전환율
+const COURSE_PATH = ['sojedom', 'jungang', 'heredi', 'indong']
+export function segmentFlow() {
+  const visitByLoc = Object.fromEntries(LOCATION_IDS.map(id => [id, 0]))
+  const segCount = {}
+  for (const e of stats.events) {
+    if (e.type === 'visit') visitByLoc[e.locationId] = (visitByLoc[e.locationId] || 0) + 1
+    if (e.type === 'segment') { const k = `${e.from}>${e.to}`; segCount[k] = (segCount[k] || 0) + 1 }
+  }
+  const out = []
+  for (let i = 0; i < COURSE_PATH.length - 1; i++) {
+    const from = COURSE_PATH[i], to = COURSE_PATH[i + 1]
+    const flow = segCount[`${from}>${to}`] || 0
+    const rate = visitByLoc[from] ? Math.round(flow / visitByLoc[from] * 100) : 0
+    out.push({ from, to, fromName: LOCATION_NAMES[from], toName: LOCATION_NAMES[to], flow, rate })
+  }
+  return out
+}
+
+// 도시재생 인사이트 (가장 전환율 낮은 구간 = 개선 필요)
+export function flowInsight() {
+  const segs = segmentFlow().filter(s => s.flow > 0)
+  if (!segs.length) return null
+  const weak = [...segs].sort((a, b) => a.rate - b.rate)[0]
+  return {
+    weakSegment: `${weak.fromName} → ${weak.toName}`,
+    weakRate: weak.rate,
+    suggestion: `${weak.fromName}–${weak.toName} 구간 전환율이 낮아요. 보행 환경 개선(가로등·쉼터·안내 사인)이 필요한 구간입니다.`,
+  }
 }
 
 export { LOCATION_NAMES }

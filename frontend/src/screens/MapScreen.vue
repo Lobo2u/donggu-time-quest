@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -12,11 +12,12 @@ import {
   startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo,
   spawnWildNear, collectWild, WILD_COLLECT_RADIUS,
 } from '../store/geoStore.js'
-import { LOCATIONS } from '../data/gameData.js'
+import { LOCATIONS, STORES } from '../data/gameData.js'
 
 const router = useRouter()
 const mapEl  = ref(null)
 const selected = ref(null)
+const selectedStore = ref(null)
 const tick = ref(0) // 근접 재계산 트리거
 
 let leafletMap = null
@@ -25,6 +26,16 @@ let wildMarkers = {}
 let userMarker = null
 let accuracyCircle = null
 let restorationLayers = {}
+let colorPane = null
+let storeMarkers = {}
+
+// ── 상권 핀 + 웨이팅 ──────────────────────────────────────────────────────────
+const waitOffsets = {}
+STORES.forEach(s => { waitOffsets[s.id] = Math.floor(Math.random() * 3) })
+const myTickets = reactive({})
+function storeWait(s) { return Math.max(0, s.waitBase + (waitOffsets[s.id] || 0)) }
+function storeVisible(s) { return locStatus(s.locationId) !== 'locked' }
+function requestWait(s) { myTickets[s.id] = storeWait(s) + 1 }
 let rafId = null
 
 const locationList = Object.values(LOCATIONS)
@@ -109,25 +120,56 @@ function initMap() {
   })
   leafletMap.zoomControl.setPosition('bottomright')
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-    maxZoom: 19,
-  }).addTo(leafletMap)
+  const TILE = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+  const ATTR = '© <a href="https://openstreetmap.org">OpenStreetMap</a>'
 
-  // 지도 색감 오버레이 (게임 분위기)
-  const tintPane = leafletMap.createPane('tintPane')
-  tintPane.style.zIndex = 250
-  tintPane.style.pointerEvents = 'none'
-  tintPane.style.background = 'rgba(12, 109, 117, 0.12)'
+  // 흑백(빛바랜) 베이스 레이어 (기억을 잃은 지도)
+  const grayPane = leafletMap.createPane('grayPane')
+  grayPane.style.zIndex = 190
+  grayPane.style.filter = 'grayscale(1) sepia(0.38) brightness(0.9) contrast(1.08)'
+  L.tileLayer(TILE, { attribution: ATTR, maxZoom: 19, pane: 'grayPane' }).addTo(leafletMap)
 
-  // 장소 마커 추가
+  // 컬러 레이어 (복원된 기억) - 완료 구역만 마스크로 드러냄
+  colorPane = leafletMap.createPane('colorPane')
+  colorPane.style.zIndex = 195
+  colorPane.style.pointerEvents = 'none'
+  L.tileLayer(TILE, { maxZoom: 19, pane: 'colorPane' }).addTo(leafletMap)
+
+  // 장소 마커 + 상점 핀 추가
   locationList.forEach(addMarker)
+  renderStores()
 
   // 지도 클릭 시 선택 해제
-  leafletMap.on('click', () => { selected.value = null })
+  leafletMap.on('click', () => { selected.value = null; selectedStore.value = null })
+  // 지도 이동/확대 시 컬러 복원 마스크 갱신
+  leafletMap.on('move zoom moveend zoomend', updateColorMask)
 
-  // 현재 목표 지점으로 이동 (겹친 마커 중 활성 마커를 또렷하게)
   focusObjective()
+  updateColorMask()
+}
+
+// 완료한 장소 주변만 컬러로 드러나도록 colorPane 에 radial-gradient 마스크 적용
+function updateColorMask() {
+  if (!colorPane || !leafletMap) return
+  const done = locationList.filter(l => locStatus(l.id) === 'complete')
+  if (done.length === locationList.length && done.length > 0) {
+    colorPane.style.webkitMaskImage = 'none'
+    colorPane.style.maskImage = 'none'
+    return
+  }
+  if (!done.length) {
+    const none = 'radial-gradient(circle 0px at -100px -100px, #000, #000)'
+    colorPane.style.webkitMaskImage = none
+    colorPane.style.maskImage = none
+    return
+  }
+  const R = 150 // 복원 반경(px)
+  const grads = done.map(l => {
+    const p = leafletMap.latLngToContainerPoint([l.lat, l.lng])
+    return `radial-gradient(circle ${R}px at ${Math.round(p.x)}px ${Math.round(p.y)}px, #000 55%, transparent 100%)`
+  }).join(', ')
+  colorPane.style.webkitMaskImage = grads
+  colorPane.style.maskImage = grads
 }
 
 // 활성 목표(진행중/탐험가능) 위치로 지도 중심 이동. 없으면 전체 보기
@@ -169,6 +211,34 @@ function updateMarker(loc) {
     iconAnchor: [40, 68],
   }))
   m.setZIndexOffset(zOffset(loc.id))
+}
+
+// ── 상점 마커 ─────────────────────────────────────────────────────────────────
+function storeMarkerHtml(s) {
+  const w = storeWait(s)
+  const waitHtml = w > 0
+    ? `<div class="lf-store-wait">대기 ${w}</div>`
+    : `<div class="lf-store-wait ok">바로</div>`
+  return `<div class="lf-store${s.hot ? ' hot' : ''}">
+    <div class="lf-store-dot"><span class="msr" style="font-size:20px">${s.icon}</span></div>
+    ${waitHtml}
+  </div>`
+}
+function renderStores() {
+  if (!leafletMap) return
+  STORES.forEach(s => {
+    const vis = storeVisible(s)
+    const icon = () => L.divIcon({ html: storeMarkerHtml(s), className: '', iconSize: [64, 54], iconAnchor: [32, 48] })
+    if (vis && !storeMarkers[s.id]) {
+      storeMarkers[s.id] = L.marker([s.lat, s.lng], { icon: icon(), zIndexOffset: 300 })
+        .addTo(leafletMap)
+        .on('click', (e) => { L.DomEvent.stopPropagation(e); selected.value = null; selectedStore.value = s })
+    } else if (vis && storeMarkers[s.id]) {
+      storeMarkers[s.id].setIcon(icon())
+    } else if (!vis && storeMarkers[s.id]) {
+      leafletMap.removeLayer(storeMarkers[s.id]); delete storeMarkers[s.id]
+    }
+  })
 }
 
 // 완료 장소에 복원 효과 (반짝이는 원)
@@ -266,6 +336,7 @@ const objective = computed(() => {
   return '모든 장소 탐험 완료!'
 })
 const completedCount = computed(() => locationList.filter(l => locStatus(l.id) === 'complete').length)
+const restorePct = computed(() => Math.round(completedCount.value / locationList.length * 100))
 const guideName = computed(() => game.guide === 'jungang' ? '중앙이' : '마중이')
 const guideMsg  = computed(() => {
   const avail = locationList.find(l => ['available','in_progress'].includes(locStatus(l.id)))
@@ -315,6 +386,8 @@ watch(
       updateMarker(loc)
       if (locStatus(loc.id) === 'complete') addRestorationEffect(loc.id)
     })
+    updateColorMask()
+    renderStores()
   },
   { deep: true },
 )
@@ -406,7 +479,7 @@ onBeforeUnmount(() => {
         <span class="msr" style="font-size:18px; color:var(--navy)">flag</span>
       </div>
       <div class="obj-texts">
-        <span class="obj-label">현재 목표 · {{ completedCount }} / {{ locationList.length }} 완료</span>
+        <span class="obj-label">기억 복원 {{ restorePct }}% · {{ completedCount }} / {{ locationList.length }}곳</span>
         <span class="obj-action">{{ objective }}</span>
         <span class="obj-next">지도 핀을 눌러 장소를 선택하세요</span>
       </div>
@@ -467,6 +540,54 @@ onBeforeUnmount(() => {
     <div class="nav-wrap">
       <BottomNavigation />
     </div>
+
+    <!-- 상점 바텀 시트 (실시간 웨이팅) -->
+    <Transition name="sheet">
+      <div class="bottom-sheet store-sheet" v-if="selectedStore">
+        <div class="sheet-handle"></div>
+        <div class="store-card">
+          <div class="store-top">
+            <div class="store-ico"><span class="msr" style="font-size:26px; color:var(--teal-dark)">{{ selectedStore.icon }}</span></div>
+            <div class="store-head">
+              <div class="store-tags">
+                <span class="store-cat">{{ selectedStore.category }}</span>
+                <span v-if="selectedStore.hot" class="store-hot">🔥 인기</span>
+                <span v-else class="store-local">골목 상권</span>
+              </div>
+              <h3 class="store-name">{{ selectedStore.name }}</h3>
+            </div>
+          </div>
+          <div class="store-offer">
+            <span class="msr" style="font-size:16px; color:var(--orange)">local_offer</span>
+            {{ selectedStore.offer }}
+          </div>
+          <!-- 실시간 웨이팅 -->
+          <div class="wait-box" :class="{ now: storeWait(selectedStore) === 0 }">
+            <div class="wait-live"><span class="live-dot"></span> 실시간</div>
+            <template v-if="storeWait(selectedStore) > 0">
+              <span class="wait-num">대기 {{ storeWait(selectedStore) }}팀</span>
+              <span class="wait-min">약 {{ storeWait(selectedStore) * 8 }}분</span>
+            </template>
+            <span v-else class="wait-num">바로 입장 가능</span>
+          </div>
+        </div>
+
+        <!-- 대기 신청 / 내 순번 -->
+        <div v-if="myTickets[selectedStore.id]" class="my-ticket">
+          <span class="msr" style="font-size:22px; color:var(--teal)">confirmation_number</span>
+          <div>
+            <p class="ticket-label">내 대기 순번</p>
+            <p class="ticket-num">{{ myTickets[selectedStore.id] }}번 · 앞에 {{ myTickets[selectedStore.id] - 1 }}팀</p>
+          </div>
+        </div>
+        <button v-else class="btn-primary" style="width:100%" @click="requestWait(selectedStore)">
+          <span class="msr" style="font-size:20px; color:var(--navy)">add_task</span>
+          대기 신청하기
+        </button>
+
+        <p class="sheet-note">검색 없이 지도 핀으로 바로 대기 신청 · 데모용 가상 매장입니다</p>
+      </div>
+    </Transition>
 
     <!-- 장소 바텀 시트 -->
     <Transition name="sheet">
@@ -750,4 +871,28 @@ onBeforeUnmount(() => {
 
 .sheet-enter-active, .sheet-leave-active { transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s; }
 .sheet-enter-from, .sheet-leave-to { transform: translateY(100%); opacity: 0; }
+
+/* 상점 시트 */
+.store-card { background: var(--white); border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.store-top { display: flex; align-items: center; gap: 12px; }
+.store-ico { width: 48px; height: 48px; border-radius: 14px; background: var(--sky); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.store-head { flex: 1; min-width: 0; }
+.store-tags { display: flex; gap: 6px; align-items: center; }
+.store-cat { font-size: 11px; font-weight: 800; color: var(--muted); }
+.store-hot { font-size: 10px; font-weight: 900; color: #D64B5F; background: #FFE8EA; border-radius: 6px; padding: 1px 6px; }
+.store-local { font-size: 10px; font-weight: 900; color: var(--teal-dark); background: var(--sky); border-radius: 6px; padding: 1px 6px; }
+.store-name { font-size: 18px; font-weight: 900; color: var(--ink); }
+.store-offer { display: flex; align-items: center; gap: 6px; background: var(--orange-soft); border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 800; color: var(--ink); }
+.wait-box { display: flex; align-items: center; gap: 10px; background: #FFF0F0; border-radius: 12px; padding: 10px 12px; }
+.wait-box.now { background: #DFF7F4; }
+.wait-live { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 900; color: #D64B5F; }
+.wait-box.now .wait-live { color: var(--teal-dark); }
+.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #D64B5F; animation: live-pulse 1.2s infinite; }
+.wait-box.now .live-dot { background: var(--teal); }
+@keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+.wait-num { font-size: 15px; font-weight: 900; color: var(--ink); }
+.wait-min { font-size: 12px; font-weight: 700; color: var(--muted); margin-left: auto; }
+.my-ticket { display: flex; align-items: center; gap: 10px; background: var(--sky); border-radius: 14px; padding: 12px; }
+.ticket-label { font-size: 11px; font-weight: 700; color: var(--muted); }
+.ticket-num { font-size: 16px; font-weight: 900; color: var(--teal-dark); }
 </style>

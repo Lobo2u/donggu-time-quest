@@ -6,6 +6,7 @@ import { abilityPower } from '../store/gameStore.js'
 import { BUDDIES, clueAnswer, lockCode } from '../data/gameData.js'
 import { computeHash, hexToHash, similarity, MATCH_THRESHOLD } from '../utils/imageHash.js'
 import { photoRefs } from '../store/photoRefStore.js'
+import BeforeAfterReveal from '../components/BeforeAfterReveal.vue'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
@@ -95,9 +96,15 @@ function tryManual() {
   if (collected[target.id]) { flashToast('이미 찾았어요'); return }
   collect(target); manualCode.value = ''
 }
+const baReveal = ref(null)     // 과거/현재 비교 팝업 대상
 function collect(target) {
   collected[target.id] = true
-  revealClue.value = target    // 단서(수수께끼) 팝업 표시
+  baReveal.value = target      // 먼저 과거↔현재 복원 연출
+}
+function onBaDone() {
+  const t = baReveal.value
+  baReveal.value = null
+  revealClue.value = t         // 그 다음 수수께끼 단서
 }
 function closeClue() {
   revealClue.value = null
@@ -220,6 +227,9 @@ function useAbility() {
 
       <p class="fq-note" v-if="!solved">세 단서의 숫자를 순서대로 입력해요</p>
     </template>
+
+    <!-- ───── 과거/현재 복원 연출 ───── -->
+    <BeforeAfterReveal v-if="baReveal" :variant="mission.locationId" :label="baReveal.label" @done="onBaDone" />
 
     <!-- ───── 단서 공개 팝업 ───── -->
     <Transition name="pop">
