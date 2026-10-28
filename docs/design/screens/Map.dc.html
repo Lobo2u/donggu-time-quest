@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>탐험 지도</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#222222;text-decoration:none}a:hover{color:#4F6B0A}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #EEF4EA; font-family: 'Noto Sans KR', system-ui, sans-serif; color: #222222">
+<div aria-hidden="true" style="position: absolute; left: -105px; top: -1556px; width: 600px; height: 2400px; transform: perspective(700px) rotateX(38deg); transform-origin: 50% 100%; transform-style: preserve-3d">
+<svg width="600" height="2400" viewBox="0 0 600 2400" aria-hidden="true" style="position: absolute; left: 0; top: 0; display: block">
+<rect x="0" y="0" width="600" height="2400" fill="#EEF3E2"></rect>
+<rect x="170" y="1300" width="260" height="850" rx="30" fill="#FFF1D6" stroke="#E9C88A" stroke-width="4" stroke-dasharray="14 12"></rect>
+<rect x="0" y="2180" width="600" height="40" fill="#FFFFFF"></rect>
+<rect x="0" y="1180" width="600" height="40" fill="#FFFFFF"></rect>
+<rect x="0" y="383" width="600" height="34" fill="#FFFFFF"></rect>
+<rect x="285" y="0" width="30" height="2400" fill="#FFFFFF"></rect>
+<rect x="80" y="0" width="20" height="2400" fill="#FFFFFF"></rect>
+<rect x="500" y="0" width="20" height="2400" fill="#FFFFFF"></rect>
+<circle cx="300" cy="2280" r="62" fill="none" stroke="#8DB02A" stroke-opacity="0.4" stroke-width="4"></circle>
+<circle cx="300" cy="2280" r="34" fill="#8DB02A" fill-opacity="0.16"></circle>
+<circle cx="300" cy="1720" r="150" fill="#8DB02A" fill-opacity="0.07" stroke="#8DB02A" stroke-opacity="0.3" stroke-width="3"></circle>
+</svg>
+<div style="position: absolute; left: 40px; top: 600px; width: 180px; height: 300px; transform-style: preserve-3d">
+<div style="position: absolute; left: -200px; top: 0; width: 200px; height: 300px; background: #CFE2DD; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 180px; top: 0; width: 200px; height: 300px; background: #96B8B1; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 300px; width: 180px; height: 200px; background: #B3CFC9; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 180px; height: 300px; background: #F3F8F6; transform: translateZ(200px)"></div>
+</div>
+<div style="position: absolute; left: 380px; top: 500px; width: 190px; height: 350px; transform-style: preserve-3d">
+<div style="position: absolute; left: -240px; top: 0; width: 240px; height: 350px; background: #E3E5E6; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 190px; top: 0; width: 240px; height: 350px; background: #BCC0C3; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 350px; width: 190px; height: 240px; background: #D0D3D5; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 190px; height: 350px; background: #F5F6F6; transform: translateZ(240px)"></div>
+</div>
+<div style="position: absolute; left: 20px; top: 1520px; width: 170px; height: 230px; transform-style: preserve-3d">
+<div style="position: absolute; left: -140px; top: 0; width: 140px; height: 230px; background: #C9E89A; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 170px; top: 0; width: 140px; height: 230px; background: #96C45A; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 230px; width: 170px; height: 140px; background: #B2DA78; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 170px; height: 230px; background: #E4F5C4; transform: translateZ(140px)"></div>
+</div>
+<div style="position: absolute; left: 430px; top: 1450px; width: 150px; height: 220px; transform-style: preserve-3d">
+<div style="position: absolute; left: -160px; top: 0; width: 160px; height: 220px; background: #CFE2DD; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 150px; top: 0; width: 160px; height: 220px; background: #96B8B1; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 220px; width: 150px; height: 160px; background: #B3CFC9; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 150px; height: 220px; background: #F3F8F6; transform: translateZ(160px)"></div>
+</div>
+<div style="position: absolute; left: 20px; top: 2250px; width: 120px; height: 130px; transform-style: preserve-3d">
+<div style="position: absolute; left: -70px; top: 0; width: 70px; height: 130px; background: #CFE2DD; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 120px; top: 0; width: 70px; height: 130px; background: #96B8B1; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 130px; width: 120px; height: 70px; background: #B3CFC9; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 120px; height: 130px; background: #F3F8F6; transform: translateZ(70px)"></div>
+</div>
+<div style="position: absolute; left: 460px; top: 2260px; width: 120px; height: 120px; transform-style: preserve-3d">
+<div style="position: absolute; left: -80px; top: 0; width: 80px; height: 120px; background: #CFE2DD; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 120px; top: 0; width: 80px; height: 120px; background: #96B8B1; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 120px; width: 120px; height: 80px; background: #B3CFC9; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 120px; height: 120px; background: #F3F8F6; transform: translateZ(80px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1360px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -34px; top: 0; width: 34px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 34px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 34px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(34px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1452px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -42px; top: 0; width: 42px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 42px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 42px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(42px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1544px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -30px; top: 0; width: 30px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 30px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 30px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(30px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1636px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -38px; top: 0; width: 38px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 38px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 38px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(38px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1728px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -44px; top: 0; width: 44px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 44px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 44px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(44px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1820px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -32px; top: 0; width: 32px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 32px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 32px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(32px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 1912px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -40px; top: 0; width: 40px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 40px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 40px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(40px)"></div>
+</div>
+<div style="position: absolute; left: 195px; top: 2004px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -36px; top: 0; width: 36px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 36px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 36px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(36px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1360px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -34px; top: 0; width: 34px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 34px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 34px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(34px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1452px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -42px; top: 0; width: 42px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 42px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 42px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(42px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1544px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -30px; top: 0; width: 30px; height: 80px; background: #C9E89A; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 30px; height: 80px; background: #96C45A; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 30px; background: #B2DA78; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E4F5C4; transform: translateZ(30px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1636px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -38px; top: 0; width: 38px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 38px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 38px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(38px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1728px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -44px; top: 0; width: 44px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 44px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 44px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(44px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1820px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -32px; top: 0; width: 32px; height: 80px; background: #BFD6D0; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 32px; height: 80px; background: #86ABA4; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 32px; background: #A3C3BC; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #E2EEEB; transform: translateZ(32px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 1912px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -40px; top: 0; width: 40px; height: 80px; background: #B3CFC9; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 40px; height: 80px; background: #7DA29B; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 40px; background: #98BBB4; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #D6E8E4; transform: translateZ(40px)"></div>
+</div>
+<div style="position: absolute; left: 335px; top: 2004px; width: 70px; height: 80px; transform-style: preserve-3d">
+<div style="position: absolute; left: -36px; top: 0; width: 36px; height: 80px; background: #FFB13D; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 70px; top: 0; width: 36px; height: 80px; background: #E8870A; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 80px; width: 70px; height: 36px; background: #F59E1F; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 70px; height: 80px; background: #FFD089; transform: translateZ(36px)"></div>
+</div>
+<div style="position: absolute; left: 120px; top: 1250px; width: 36px; height: 36px; transform-style: preserve-3d">
+<div style="position: absolute; left: -48px; top: 0; width: 48px; height: 36px; background: #6DBF80; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 36px; top: 0; width: 48px; height: 36px; background: #4A935C; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 36px; width: 36px; height: 48px; background: #58A86B; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; background: #8FD19E; transform: translateZ(48px)"></div>
+</div>
+<div style="position: absolute; left: 470px; top: 1240px; width: 36px; height: 36px; transform-style: preserve-3d">
+<div style="position: absolute; left: -48px; top: 0; width: 48px; height: 36px; background: #6DBF80; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 36px; top: 0; width: 48px; height: 36px; background: #4A935C; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 36px; width: 36px; height: 48px; background: #58A86B; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; background: #8FD19E; transform: translateZ(48px)"></div>
+</div>
+<div style="position: absolute; left: 130px; top: 2120px; width: 36px; height: 36px; transform-style: preserve-3d">
+<div style="position: absolute; left: -48px; top: 0; width: 48px; height: 36px; background: #6DBF80; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 36px; top: 0; width: 48px; height: 36px; background: #4A935C; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 36px; width: 36px; height: 48px; background: #58A86B; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; background: #8FD19E; transform: translateZ(48px)"></div>
+</div>
+<div style="position: absolute; left: 440px; top: 2120px; width: 36px; height: 36px; transform-style: preserve-3d">
+<div style="position: absolute; left: -48px; top: 0; width: 48px; height: 36px; background: #6DBF80; transform-origin: 100% 50%; transform: rotateY(90deg)"></div>
+<div style="position: absolute; left: 36px; top: 0; width: 48px; height: 36px; background: #4A935C; transform-origin: 0 50%; transform: rotateY(-90deg)"></div>
+<div style="position: absolute; left: 0; top: 36px; width: 36px; height: 48px; background: #58A86B; transform-origin: 50% 0; transform: rotateX(90deg)"></div>
+<div style="position: absolute; left: 0; top: 0; width: 36px; height: 36px; background: #8FD19E; transform: translateZ(48px)"></div>
+</div>
+</div>
+<div aria-hidden="true" style="position: absolute; left: 0; top: 0; width: 390px; height: 330px; background: linear-gradient(180deg, #EEF4EA 0%, #EEF4EA 55%, rgba(238,244,234,0) 100%)"></div>
+<span style="position: absolute; left: 132px; top: 650px; height: 24px; padding: 0 10px; border-radius: 12px; background: #FFFFFF; font-size: 11px; font-weight: 700; color: #6B4E12; display: flex; align-items: center">중앙시장 상권</span>
+<a href="Mission.dc.html" aria-label="인동시장 잠김" style="position: absolute; left: 220px; top: 236px; width: 96px; display: flex; flex-direction: column; align-items: center; transform: scale(0.62); transform-origin: 50% 100%">
+<span style="width: 52px; height: 52px; box-sizing: border-box; border-radius: 50%; border: 4px solid #FFFFFF; background: #B5B5B5; box-shadow: 0 8px 14px rgba(34,34,34,0.2); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg></span>
+<span style="width: 2px; height: 16px; background: #B5B5B5"></span>
+<span style="width: 22px; height: 7px; border-radius: 50%; background: rgba(34,34,34,0.2)"></span>
+<span style="margin-top: 4px; height: 22px; padding: 0 10px; border-radius: 11px; background: #6B6B6B; color: #FFFFFF; font-size: 13px; font-weight: 700; display: flex; align-items: center; white-space: nowrap">인동시장</span>
+</a>
+<a href="Mission.dc.html" aria-label="소제동 완료" style="position: absolute; left: 102px; top: 349px; width: 96px; display: flex; flex-direction: column; align-items: center; transform: scale(0.8); transform-origin: 50% 100%">
+<span style="width: 52px; height: 52px; box-sizing: border-box; border-radius: 50%; border: 4px solid #FFFFFF; background: #4F6B0A; box-shadow: 0 8px 14px rgba(34,34,34,0.22); display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>
+<span style="width: 2px; height: 16px; background: #B5B5B5"></span>
+<span style="width: 22px; height: 7px; border-radius: 50%; background: rgba(34,34,34,0.2)"></span>
+<span style="margin-top: 4px; height: 22px; padding: 0 10px; border-radius: 11px; background: #4F6B0A; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; white-space: nowrap">소제동</span>
+</a>
+<a href="Mission.dc.html" aria-label="중앙시장 완료, 캐릭터 강화" style="position: absolute; left: 194px; top: 375px; width: 96px; display: flex; flex-direction: column; align-items: center; transform: scale(0.82); transform-origin: 50% 100%">
+<span style="width: 52px; height: 52px; box-sizing: border-box; border-radius: 50%; border: 4px solid #FFFFFF; background: #4F6B0A; box-shadow: 0 0 0 4px rgba(255,159,28,0.45), 0 8px 14px rgba(34,34,34,0.22); display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#FF9F1C" aria-hidden="true"><path d="M12 2l3 7 7 .6-5.3 4.7 1.6 7.2L12 17.8 5.7 21.5l1.6-7.2L2 9.6 9 9z"></path></svg></span>
+<span style="width: 2px; height: 16px; background: #B5B5B5"></span>
+<span style="width: 22px; height: 7px; border-radius: 50%; background: rgba(34,34,34,0.2)"></span>
+<span style="margin-top: 4px; height: 22px; padding: 0 10px; border-radius: 11px; background: #4F6B0A; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; white-space: nowrap">중앙시장</span>
+</a>
+<a href="Mission.dc.html" aria-label="한의약거리 탐험 가능" style="position: absolute; left: 199px; top: 498px; width: 96px; display: flex; flex-direction: column; align-items: center">
+<span style="width: 64px; height: 64px; box-sizing: border-box; border-radius: 50%; border: 4px solid #FFFFFF; background: #FF9F1C; box-shadow: 0 0 0 6px rgba(255,159,28,0.28), 0 10px 18px rgba(34,34,34,0.28); font-size: 22px; font-weight: 900; color: #222222; display: flex; align-items: center; justify-content: center">!</span>
+<span style="width: 2px; height: 20px; background: #B5B5B5"></span>
+<span style="width: 26px; height: 8px; border-radius: 50%; background: rgba(34,34,34,0.22)"></span>
+<span style="margin-top: 4px; height: 24px; padding: 0 12px; border-radius: 12px; background: #4F6B0A; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; white-space: nowrap">한의약거리</span>
+</a>
+<button aria-label="단서 조각 줍기, 힌트 게이지 충전" style="position: absolute; left: 92px; top: 676px; width: 44px; height: 44px; border: none; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="26" height="26" viewBox="0 0 24 24" fill="#FF9F1C" stroke="#FFFFFF" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.2 9.3a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1-1.3 1.9v.6" fill="none" stroke="#222222" stroke-width="2.2" stroke-linecap="round"></path><circle cx="12" cy="17.6" r="1.3" fill="#222222" stroke="none"></circle></svg></button>
+<button aria-label="단서 조각 줍기, 힌트 게이지 충전" style="position: absolute; left: 286px; top: 700px; width: 44px; height: 44px; border: none; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="#FF9F1C" stroke="#FFFFFF" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.2 9.3a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1-1.3 1.9v.6" fill="none" stroke="#222222" stroke-width="2.2" stroke-linecap="round"></path><circle cx="12" cy="17.6" r="1.3" fill="#222222" stroke="none"></circle></svg></button>
+<svg role="img" aria-label="나의 위치" width="56" height="84" viewBox="0 0 56 84" style="position: absolute; left: 167px; top: 678px; filter: drop-shadow(0 6px 5px rgba(34,34,34,0.3))">
+<defs>
+<radialGradient id="pHead" cx="0.35" cy="0.3" r="0.75"><stop offset="0" stop-color="#F3F8F6"></stop><stop offset="0.6" stop-color="#B3CFC9"></stop><stop offset="1" stop-color="#7DA29B"></stop></radialGradient>
+<radialGradient id="pHand" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#F3F8F6"></stop><stop offset="1" stop-color="#96B8B1"></stop></radialGradient>
+</defs>
+<circle cx="28" cy="16" r="13" fill="url(#pHead)"></circle>
+<polygon points="12,34 28,37 28,80" fill="#B3CFC9"></polygon>
+<polygon points="28,37 44,34 28,80" fill="#86ABA4"></polygon>
+<ellipse cx="28" cy="34" rx="16" ry="4" fill="#CFE2DD"></ellipse>
+<circle cx="6" cy="47" r="5.5" fill="url(#pHand)"></circle>
+<circle cx="50" cy="47" r="5.5" fill="url(#pHand)"></circle>
+</svg>
+<div style="position: absolute; left: 12px; right: 12px; top: 12px; display: flex; align-items: center; gap: 8px">
+<a href="Menu.dc.html" aria-label="메뉴 열기" style="width: 48px; height: 48px; border-radius: 24px; background: #FFFFFF; box-shadow: 0 4px 12px rgba(34,34,34,0.18); flex: none; display: flex; align-items: center; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#222222" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></a>
+<div style="height: 40px; padding: 0 14px 0 6px; border-radius: 20px; background: #4F6B0A; box-shadow: 0 4px 12px rgba(34,34,34,0.18); display: flex; align-items: center; gap: 6px">
+<span role="img" aria-label="감 등급" style="width: 28px; height: 28px; border-radius: 14px; background: #FFF1D6; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="8" fill="#F08A24"></circle><path d="M7 8l2.5 1.5L12 7l2.5 2.5L17 8l-1 3H8z" fill="#4F6B0A"></path></svg></span>
+<span style="font-size: 12px; font-weight: 700; color: #FFFFFF">Lv.3</span>
+<span style="width: 1px; height: 14px; background: rgba(255,255,255,0.5)"></span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="#FF9F1C" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M9.2 9.3a2.9 2.9 0 1 1 4.1 2.6c-.8.4-1.3 1-1.3 1.9v.6" fill="none" stroke="#222222" stroke-width="2.2" stroke-linecap="round"></path><circle cx="12" cy="17.6" r="1.3" fill="#222222" stroke="none"></circle></svg>
+<span role="img" aria-label="힌트 게이지 5칸 중 3칸" style="width: 44px; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.35); overflow: hidden; display: flex"><span style="width: 60%; height: 6px; background: #FF9F1C"></span></span>
+<span style="font-size: 12px; font-weight: 700; color: #FFFFFF">3/5</span>
+</div>
+<span style="margin-left: auto; height: 40px; padding: 0 14px; border-radius: 20px; background: #FFFFFF; box-shadow: 0 4px 12px rgba(34,34,34,0.18); font-size: 13px; font-weight: 900; color: #222222; display: flex; align-items: center">2 / 4</span>
+</div>
+<div style="position: absolute; left: 12px; right: 12px; top: 72px; height: 40px; padding: 0 14px; border-radius: 20px; background: rgba(255,255,255,0.92); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #222222">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4F6B0A" stroke-width="2.2" aria-hidden="true"><path d="M5 21V4h11l-2 4 2 4H5"></path></svg>
+한의약거리 핀을 눌러 탐험을 시작해요
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
