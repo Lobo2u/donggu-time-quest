@@ -326,7 +326,10 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
         <path :d="SPARK" :transform="`translate(14 ${g.fy + 10}) scale(1.1)`" fill="#FFC83D" />
       </template>
       <template v-else-if="spec.fx === 'lines'">
-        <path d="M12 40 l6 6 M8 54 l7 2 M108 40 l-6 6 M112 54 l-7 2"
+        <!-- 중앙이는 아치 옆에 붙으면 띠처럼 보여서 위쪽 바깥으로 뺀다 -->
+        <path :d="isMajung
+            ? 'M12 40 l6 6 M8 54 l7 2 M108 40 l-6 6 M112 54 l-7 2'
+            : 'M6 10 l6 5 M2 22 l7 1 M114 10 l-6 5 M118 22 l-7 1'"
           stroke="#FF9F1C" stroke-width="2.5" stroke-linecap="round" />
       </template>
     </g>
