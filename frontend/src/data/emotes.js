@@ -2,10 +2,10 @@
 // MascotSvg 가 MOOD_SPEC 으로 눈/입/포즈/이펙트를 조합해 그린다.
 // 값이 { majung, jungang } 객체면 캐릭터별로 다르게 그린다.
 
-// eyes : dot | arc | wide | blank | half | angry | sad | flat | squint
+// eyes : dot | arc | wide | tiny | half | angry | sad | flat | squint
 // mouth: smile | open | big | o | line | shout | frown | wave   (마중이는 부리만 그림)
-// pose : down | wave | up | open | tuck | forehead(이마에 손) | scratch(머리 긁기) | cheek(볼에 손)
-// fx   : null | lines | bang | question | dots | anger | sigh | note | sparkle | tear | blush
+// pose : down | wave | up | open | tuck | point(날개 끝을 머리 옆으로) | forehead(이마에 손) | scratch(머리 긁기) | cheek(볼에 손)
+// fx   : null | lines | bang | question | dots | anger | note | sparkle | tear | blush
 // tilt : 몸 기울기(도)
 export const MOOD_SPEC = {
   // 기본 표정 — 기존 화면(친구 만남·컬렉션 등)에서 쓰는 상태
@@ -16,12 +16,12 @@ export const MOOD_SPEC = {
   sad:     { eyes: 'sad',    mouth: 'frown', pose: 'tuck', fx: 'tear' },
 
   // 스케치 이모티콘
-  blank:     { eyes: { majung: 'blank', jungang: 'half' }, mouth: 'shout', pose: 'down', fx: 'dots' },
+  blank:     { eyes: { majung: 'tiny', jungang: 'half' }, mouth: 'shout', pose: 'down', fx: 'dots' },
   angry:     { eyes: 'angry',  mouth: 'frown', pose: 'wave',     fx: 'anger' },
-  sigh:      { eyes: 'flat',   mouth: 'shout', pose: 'forehead', fx: 'sigh' },
+  sigh:      { eyes: 'flat',   mouth: 'shout', pose: 'forehead', fx: null },
   confused:  { eyes: 'dot',    mouth: 'smile', pose: 'scratch',  fx: 'question', tilt: -8 },
   hype:      { eyes: 'squint', mouth: 'big',   pose: 'up',       fx: 'sparkle' },
-  aha:       { eyes: 'dot',    mouth: 'open',  pose: 'wave',     fx: 'bang' },
+  aha:       { eyes: 'dot',    mouth: 'open',  pose: 'point',    fx: 'bang' },
   curious:   { eyes: 'dot',    mouth: 'open',  pose: 'cheek',    fx: 'question', tilt: -5 },
   surprised: { eyes: 'wide',   mouth: 'shout', pose: 'wave',     fx: 'bang' },
   laugh:     { eyes: 'squint', mouth: 'big',   pose: 'open',     fx: 'lines' },

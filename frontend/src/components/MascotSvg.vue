@@ -33,6 +33,7 @@ const wingRot = computed(() => ({
   up:    [95, 95],
   open:  [30, 30],
   tuck:  [-12, -12],
+  point:    [120, 0],
   forehead: [155, 0],
   scratch:  [136, 0],
   cheek:    [136, 0],
@@ -44,6 +45,7 @@ const hands = computed(() => ({
   up:    [[11, 60], [109, 60]],
   open:  [[10, 78], [110, 78]],
   tuck:  [[16, 98], [104, 98]],
+  point:    [[12, 48], [109, 90]],
   forehead: [[36, 72], [109, 90]],
   scratch:  [[14, 40], [109, 90]],
   cheek:    [[28, 93], [109, 90]],
@@ -51,7 +53,8 @@ const hands = computed(() => ({
 
 // 날개는 어깨(42,86) 기준으로 회전, 이마에 댈 때는 얼굴을 다 가리지 않게 살짝 줄인다
 function wingT(deg) {
-  const scale = spec.value.pose === 'forehead' ? ' translate(42 86) scale(0.72) translate(-42 -86)' : ''
+  const k = { forehead: 0.72, point: 0.8 }[spec.value.pose]
+  const scale = k ? ` translate(42 86) scale(${k}) translate(-42 -86)` : ''
   return `rotate(${deg} 42 86)${scale}`
 }
 
@@ -185,10 +188,7 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
       <path v-else-if="spec.eyes === 'arc'"
         :d="`M${ex - 5} ${g.ey + 2} Q${ex} ${g.ey - 5} ${ex + 5} ${g.ey + 2}`"
         :stroke="g.ink" stroke-width="3" fill="none" stroke-linecap="round" />
-      <template v-else-if="spec.eyes === 'blank'">
-        <circle :cx="ex" :cy="g.ey" r="6" fill="#FFFFFF" :stroke="g.ink" stroke-width="1.8" />
-        <circle :cx="ex" :cy="g.ey" r="1.2" :fill="g.ink" />
-      </template>
+      <ellipse v-else-if="spec.eyes === 'tiny'" :cx="ex" :cy="g.ey" rx="2.2" ry="2.6" :fill="g.ink" />
       <template v-else-if="spec.eyes === 'half'">
         <path :d="`M${ex - 5} ${g.ey - 1} Q${ex} ${g.ey + 7} ${ex + 5} ${g.ey - 1} Z`" :fill="g.ink" />
         <path :d="`M${ex - 6} ${g.ey - 1} L${ex + 6} ${g.ey - 1}`" :stroke="g.ink" stroke-width="2.2" stroke-linecap="round" />
@@ -306,11 +306,6 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
         stroke="#E53935" stroke-width="2.6" fill="none" stroke-linecap="round">
         <path d="M-7 -2 Q-2 -2 -2 -7" /><path d="M2 -7 Q2 -2 7 -2" />
         <path d="M-7 2 Q-2 2 -2 7" /><path d="M2 7 Q2 2 7 2" />
-      </g>
-      <!-- 한숨 구름 -->
-      <g v-else-if="spec.fx === 'sigh'" :transform="`translate(${g.cx2 + 12} ${g.cy + 4})`"
-        fill="#FFFFFF" stroke="#9AA6B8" stroke-width="1.3">
-        <circle cx="0" cy="0" r="4.5" /><circle cx="6" cy="-2" r="5.5" /><circle cx="12" cy="1" r="4" />
       </g>
       <g v-else-if="spec.fx === 'note'" fill="#7B5BD6" font-weight="900" font-family="sans-serif">
         <text :x="g.fx - 12" :y="g.fy + 22" font-size="15">♪</text>
