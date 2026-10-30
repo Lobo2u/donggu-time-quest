@@ -20,7 +20,7 @@ const isMajung = computed(() => props.character !== 'jungang')
 // 캐릭터별 얼굴 좌표 (눈 / 입 / 볼 / 이펙트 기준점)
 const g = computed(() => isMajung.value
   ? { ex1: 50, ex2: 70, ey: 61, er: 4.6, my: 71, cy: 70, cx1: 42, cx2: 78, fx: 104, fy: 22, ink: '#141821' }
-  : { ex1: 49, ex2: 71, ey: 84, er: 4.4, my: 95, cy: 94, cx1: 39, cx2: 81, fx: 108, fy: 18, ink: '#1E2229' })
+  : { ex1: 47, ex2: 73, ey: 82, er: 4.4, my: 90, cy: 90, cx1: 34, cx2: 86, fx: 108, fy: 16, ink: '#1E2229' })
 
 // 날개(마중이) 회전 / 손(중앙이) 위치
 const wingRot = computed(() => ({
@@ -32,12 +32,12 @@ const wingRot = computed(() => ({
 }[spec.value.pose] ?? [0, 0]))
 
 const hands = computed(() => ({
-  down:  [[19, 94], [101, 94]],
-  wave:  [[13, 64], [101, 94]],
-  up:    [[13, 62], [107, 62]],
-  open:  [[11, 80], [109, 80]],
-  tuck:  [[24, 102], [96, 102]],
-}[spec.value.pose] ?? [[19, 94], [101, 94]]))
+  down:  [[11, 90], [109, 90]],
+  wave:  [[11, 62], [109, 90]],
+  up:    [[11, 60], [109, 60]],
+  open:  [[10, 78], [110, 78]],
+  tuck:  [[16, 98], [104, 98]],
+}[spec.value.pose] ?? [[11, 90], [109, 90]]))
 
 const HEART = 'M0 3 C-4 0 -4.2 -4 -1.6 -4 C-0.6 -4 0 -3.2 0 -2.6 C0 -3.2 0.6 -4 1.6 -4 C4.2 -4 4 0 0 3 Z'
 const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
@@ -112,38 +112,38 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
     <!-- ─────────── 중앙이 ─────────── -->
     <g v-else>
       <!-- 다리 + 신발 -->
-      <rect x="40" y="108" width="9" height="18" rx="2" fill="#9AA1AA" stroke="#6B7280" stroke-width="1.5" />
-      <rect x="71" y="108" width="9" height="18" rx="2" fill="#9AA1AA" stroke="#6B7280" stroke-width="1.5" />
-      <ellipse cx="44" cy="128" rx="12" ry="7" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
-      <ellipse cx="76" cy="128" rx="12" ry="7" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
+      <rect x="38" y="104" width="9" height="18" rx="2" fill="#9AA1AA" stroke="#6B7280" stroke-width="1.5" />
+      <rect x="73" y="104" width="9" height="18" rx="2" fill="#9AA1AA" stroke="#6B7280" stroke-width="1.5" />
+      <ellipse cx="42" cy="126" rx="12" ry="7" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
+      <ellipse cx="78" cy="126" rx="12" ry="7" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
 
       <!-- 아치 유리창 -->
-      <path d="M30 52 Q30 18 60 18 Q90 18 90 52 Z" fill="#74AEEA" />
-      <line x1="47" y1="21" x2="47" y2="52" stroke="#FFFFFF" stroke-width="1.3" opacity="0.85" />
-      <line x1="60" y1="18" x2="60" y2="52" stroke="#FFFFFF" stroke-width="1.3" opacity="0.85" />
-      <line x1="73" y1="21" x2="73" y2="52" stroke="#FFFFFF" stroke-width="1.3" opacity="0.85" />
-      <path d="M34 34 Q60 28 86 34" stroke="#FFFFFF" stroke-width="1.3" fill="none" opacity="0.6" />
+      <path d="M26 52 Q26 24 60 24 Q94 24 94 52 Z" fill="#74AEEA" />
+      <line x1="44" y1="27" x2="44" y2="52" stroke="#FFFFFF" stroke-width="1.3" opacity="0.85" />
+      <line x1="60" y1="24" x2="60" y2="52" stroke="#FFFFFF" stroke-width="1.3" opacity="0.85" />
+      <line x1="76" y1="27" x2="76" y2="52" stroke="#FFFFFF" stroke-width="1.3" opacity="0.85" />
+      <path d="M30 38 Q60 33 90 38" stroke="#FFFFFF" stroke-width="1.3" fill="none" opacity="0.6" />
       <!-- 빨간 아치 지붕 -->
-      <path d="M18 54 Q18 6 60 6 Q102 6 102 54 L90 54 Q90 18 60 18 Q30 18 30 54 Z" fill="#E8463C" stroke="#B8322A" stroke-width="1.5" />
-      <path d="M22 40 Q26 16 46 10" stroke="#FF8A7F" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7" />
-      <rect x="52" y="2" width="16" height="13" rx="3" fill="#E8463C" stroke="#B8322A" stroke-width="1.5" />
+      <path d="M14 56 Q14 12 60 12 Q106 12 106 56 L94 56 Q94 24 60 24 Q26 24 26 56 Z" fill="#E8463C" stroke="#B8322A" stroke-width="1.5" />
+      <path d="M18 44 Q22 22 44 16" stroke="#FF8A7F" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.7" />
+      <rect x="52" y="7" width="16" height="12" rx="3" fill="#E8463C" stroke="#B8322A" stroke-width="1.5" />
 
       <!-- 손 -->
       <circle :cx="hands[0][0]" :cy="hands[0][1]" r="9" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
       <circle :cx="hands[1][0]" :cy="hands[1][1]" r="9" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
 
       <!-- 간판 몸통 -->
-      <rect x="24" y="44" width="72" height="68" rx="9" fill="#9AA1AA" stroke="#6B7280" stroke-width="2" />
-      <rect x="29" y="49" width="62" height="14" rx="3" fill="#FFFFFF" />
-      <circle cx="37" cy="56" r="5" fill="#F39A1E" />
-      <g fill="#FFFFFF" transform="translate(37 56)">
+      <rect x="16" y="46" width="88" height="61" rx="10" fill="#9AA1AA" stroke="#6B7280" stroke-width="2" />
+      <rect x="22" y="51" width="76" height="14" rx="3" fill="#FFFFFF" />
+      <circle cx="33" cy="58" r="5" fill="#F39A1E" />
+      <g fill="#FFFFFF" transform="translate(33 58)">
         <circle cx="-1.6" cy="-2" r="1" /><circle cx="1.6" cy="-2" r="1" />
         <rect x="-2.4" y="-0.8" width="1.6" height="3.4" rx="0.6" />
         <rect x="0.8" y="-0.8" width="1.6" height="3.4" rx="0.6" />
       </g>
-      <text x="65" y="59.5" text-anchor="middle" font-size="9.5" font-weight="900" fill="#2A2F3A"
+      <text x="64" y="62" text-anchor="middle" font-size="10.5" font-weight="900" fill="#2A2F3A"
         font-family="'Noto Sans KR', sans-serif">중앙시장</text>
-      <rect x="29" y="66" width="62" height="41" rx="4" fill="#FBF8F1" />
+      <rect x="22" y="68" width="76" height="34" rx="4" fill="#FBF8F1" />
     </g>
 
     <!-- ─────────── 공통 얼굴 ─────────── -->
@@ -233,7 +233,7 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
     </g>
 
     <!-- 강화 왕관 -->
-    <g v-if="awoken" :transform="isMajung ? 'translate(0 -2)' : 'translate(0 -6)'">
+    <g v-if="awoken" :transform="isMajung ? 'translate(0 -2)' : 'translate(0 -2)'">
       <polygon points="60,2 65,11 76,9 68,16 72,24 60,18 48,24 52,16 44,9 55,11"
         fill="#FFD700" stroke="#C98A00" stroke-width="0.8" />
       <circle cx="60" cy="3" r="2" fill="#FFFFFF" opacity="0.9" />
