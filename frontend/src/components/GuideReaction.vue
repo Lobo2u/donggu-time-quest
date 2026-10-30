@@ -2,12 +2,13 @@
 // 게임 상황(정답/오답/도착/성공)에 가이드 마스코트가 표정으로 반응하는 말풍선
 import { game } from '../store/gameStore.js'
 import { reaction } from '../store/reactionStore.js'
+import { story } from '../store/storyStore.js'
 import MascotSvg from './MascotSvg.vue'
 </script>
 
 <template>
   <Transition name="guide-pop">
-    <div class="guide-reaction" v-if="reaction.visible" :key="reaction.key" aria-live="polite">
+    <div class="guide-reaction" v-if="reaction.visible && !story.open" :key="reaction.key" aria-live="polite">
       <MascotSvg :character="game.guide ?? 'majung'" :mood="reaction.emote" :size="64" />
       <div class="guide-bubble">{{ reaction.text }}</div>
     </div>

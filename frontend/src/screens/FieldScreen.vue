@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import MascotSvg from '../components/MascotSvg.vue'
 
 const router = useRouter()
 const currentStep = ref(1)
@@ -93,7 +94,7 @@ const steps = [
 
     <!-- Character hint -->
     <div class="char-hint">
-      <div class="hint-char">🐧</div>
+      <div class="hint-char"><MascotSvg character="majung" mood="aha" :size="44" :animated="false" /></div>
       <p class="hint-dialogue">마중이: "시설은 만지지 말고, 보이는 모습만 살펴봐!"</p>
     </div>
 

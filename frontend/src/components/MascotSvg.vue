@@ -2,9 +2,9 @@
 // 공식 마스코트 SVG 스프라이트 (표정 세트 포함)
 // - majung : 마중이 (역무원 제복을 입은 까치 안내자)
 // - jungang: 중앙이 (중앙시장 아치 간판 캐릭터)
-// mood 목록은 data/emotes.js 의 EMOTES 와 같다.
+// mood 목록은 data/emotes.js 의 MOOD_SPEC / EMOTE_SETS 를 따른다.
 import { computed } from 'vue'
-import { MOOD_SPEC } from '../data/emotes.js'
+import { MOOD_SPEC, pick } from '../data/emotes.js'
 
 const props = defineProps({
   character: { type: String,  default: 'majung' }, // majung | jungang
@@ -14,8 +14,12 @@ const props = defineProps({
   animated:  { type: Boolean, default: true },    // 스프라이트 내보내기 시 false
 })
 
-const spec = computed(() => MOOD_SPEC[props.mood] ?? MOOD_SPEC.idle)
 const isMajung = computed(() => props.character !== 'jungang')
+const spec = computed(() => {
+  const raw = MOOD_SPEC[props.mood] ?? MOOD_SPEC.idle
+  const who = isMajung.value ? 'majung' : 'jungang'
+  return Object.fromEntries(Object.entries(raw).map(([k, v]) => [k, pick(v, who)]))
+})
 
 // 캐릭터별 얼굴 좌표 (눈 / 입 / 볼 / 이펙트 기준점)
 const g = computed(() => isMajung.value
@@ -27,8 +31,11 @@ const wingRot = computed(() => ({
   down:  [0, 0],
   wave:  [95, 0],
   up:    [95, 95],
-  open:  [60, 60],
+  open:  [30, 30],
   tuck:  [-12, -12],
+  forehead: [155, 0],
+  scratch:  [136, 0],
+  cheek:    [136, 0],
 }[spec.value.pose] ?? [0, 0]))
 
 const hands = computed(() => ({
@@ -37,9 +44,19 @@ const hands = computed(() => ({
   up:    [[11, 60], [109, 60]],
   open:  [[10, 78], [110, 78]],
   tuck:  [[16, 98], [104, 98]],
+  forehead: [[36, 72], [109, 90]],
+  scratch:  [[14, 40], [109, 90]],
+  cheek:    [[28, 93], [109, 90]],
 }[spec.value.pose] ?? [[11, 90], [109, 90]]))
 
-const HEART = 'M0 3 C-4 0 -4.2 -4 -1.6 -4 C-0.6 -4 0 -3.2 0 -2.6 C0 -3.2 0.6 -4 1.6 -4 C4.2 -4 4 0 0 3 Z'
+// 날개는 어깨(42,86) 기준으로 회전, 이마에 댈 때는 얼굴을 다 가리지 않게 살짝 줄인다
+function wingT(deg) {
+  const scale = spec.value.pose === 'forehead' ? ' translate(42 86) scale(0.72) translate(-42 -86)' : ''
+  return `rotate(${deg} 42 86)${scale}`
+}
+
+// 이마·볼에 댄 왼손(날개)은 얼굴 위에 그려야 하므로 앞 레이어로 옮긴다
+const frontHand = computed(() => ['forehead', 'cheek'].includes(spec.value.pose))
 const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
 </script>
 
@@ -56,11 +73,12 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
     <!-- 그림자 -->
     <ellipse cx="60" cy="134" rx="30" ry="5" fill="#08233F22" />
 
+    <g :transform="spec.tilt ? `rotate(${spec.tilt} 60 130)` : null">
     <!-- ─────────── 마중이 ─────────── -->
     <g v-if="isMajung">
       <!-- 꼬리 깃 -->
-      <path d="M64 100 Q86 104 100 116 Q98 126 90 128 Q76 122 62 116 Z" fill="#1B1F2A" />
-      <path d="M90 113 Q97 116 100 116 Q99 122 96 125 Q92 120 88 118 Z" fill="#FFFFFF" />
+      <path d="M62 100 Q92 104 116 124 Q114 133 106 133 Q82 124 60 116 Z" fill="#1B1F2A" />
+      <path d="M84 110 Q102 118 113 127 Q110 130 106 130 Q94 122 82 116 Z" fill="#2F5FB8" />
 
       <!-- 발 -->
       <rect x="47" y="112" width="6" height="14" rx="2" fill="#1B1F2A" />
@@ -95,16 +113,16 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
       <path d="M33 56 Q26 50 30 44 Q34 50 37 52 Z" fill="#1B1F2A" />
       <ellipse cx="60" cy="66" rx="23" ry="17" fill="#FFFDF8" />
       <!-- 날개 (왼쪽 / 거울 반전한 오른쪽) -->
-      <g :transform="`rotate(${wingRot[0]} 42 86)`">
-        <path d="M43 86 Q26 92 27 114 Q34 112 45 98 Z" fill="#1B1F2A" />
-        <path d="M38 96 Q30 102 30 110 Q35 106 40 100 Z" fill="#FFFFFF" />
-        <path d="M34 100 Q29 106 29 112 Q32 108 36 104 Z" fill="#3D7BE0" />
+      <g v-if="!frontHand" :transform="wingT(wingRot[0])">
+        <path d="M46 84 Q24 86 18 104 Q14 114 15 125 L20 120 L21 128 L26 121 L28 127 Q37 112 47 98 Z" fill="#1B1F2A" />
+        <path d="M41 92 Q29 98 25 110 Q31 106 37 102 Q41 99 43 96 Z" fill="#FFFFFF" />
+        <path d="M24 108 Q18 116 18 123 L21 119 Q24 113 28 109 Z" fill="#3D7BE0" />
       </g>
       <g transform="translate(120 0) scale(-1 1)">
-        <g :transform="`rotate(${wingRot[1]} 42 86)`">
-          <path d="M43 86 Q26 92 27 114 Q34 112 45 98 Z" fill="#1B1F2A" />
-          <path d="M38 96 Q30 102 30 110 Q35 106 40 100 Z" fill="#FFFFFF" />
-          <path d="M34 100 Q29 106 29 112 Q32 108 36 104 Z" fill="#3D7BE0" />
+        <g :transform="wingT(wingRot[1])">
+          <path d="M46 84 Q24 86 18 104 Q14 114 15 125 L20 120 L21 128 L26 121 L28 127 Q37 112 47 98 Z" fill="#1B1F2A" />
+          <path d="M41 92 Q29 98 25 110 Q31 106 37 102 Q41 99 43 96 Z" fill="#FFFFFF" />
+          <path d="M24 108 Q18 116 18 123 L21 119 Q24 113 28 109 Z" fill="#3D7BE0" />
         </g>
       </g>
     </g>
@@ -129,7 +147,7 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
       <rect x="52" y="7" width="16" height="12" rx="3" fill="#E8463C" stroke="#B8322A" stroke-width="1.5" />
 
       <!-- 손 -->
-      <circle :cx="hands[0][0]" :cy="hands[0][1]" r="9" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
+      <circle v-if="!frontHand" :cx="hands[0][0]" :cy="hands[0][1]" r="9" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
       <circle :cx="hands[1][0]" :cy="hands[1][1]" r="9" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
 
       <!-- 간판 몸통 -->
@@ -158,17 +176,23 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
 
     <!-- 눈 -->
     <g v-for="(ex, i) in [g.ex1, g.ex2]" :key="'eye' + i">
-      <!-- 동그란 눈 (윙크 시 왼쪽만) -->
-      <template v-if="spec.eyes === 'dot' || spec.eyes === 'sad' || (spec.eyes === 'wink' && i === 0)">
+      <!-- 동그란 눈 -->
+      <template v-if="spec.eyes === 'dot' || spec.eyes === 'sad' || spec.eyes === 'angry'">
         <ellipse :cx="ex" :cy="g.ey" :rx="g.er" :ry="g.er * 1.25" :fill="g.ink" />
         <circle :cx="ex + 1.5" :cy="g.ey - 2" r="1.7" fill="#FFFFFF" />
         <circle :cx="ex - 1.3" :cy="g.ey + 2" r="0.8" fill="#FFFFFF" />
       </template>
-      <path v-else-if="spec.eyes === 'arc' || spec.eyes === 'wink'"
+      <path v-else-if="spec.eyes === 'arc'"
         :d="`M${ex - 5} ${g.ey + 2} Q${ex} ${g.ey - 5} ${ex + 5} ${g.ey + 2}`"
         :stroke="g.ink" stroke-width="3" fill="none" stroke-linecap="round" />
-      <path v-else-if="spec.eyes === 'heart'" :d="HEART"
-        :transform="`translate(${ex} ${g.ey}) scale(1.7)`" fill="#E8455A" />
+      <template v-else-if="spec.eyes === 'blank'">
+        <circle :cx="ex" :cy="g.ey" r="6" fill="#FFFFFF" :stroke="g.ink" stroke-width="1.8" />
+        <circle :cx="ex" :cy="g.ey" r="1.2" :fill="g.ink" />
+      </template>
+      <template v-else-if="spec.eyes === 'half'">
+        <path :d="`M${ex - 5} ${g.ey - 1} Q${ex} ${g.ey + 7} ${ex + 5} ${g.ey - 1} Z`" :fill="g.ink" />
+        <path :d="`M${ex - 6} ${g.ey - 1} L${ex + 6} ${g.ey - 1}`" :stroke="g.ink" stroke-width="2.2" stroke-linecap="round" />
+      </template>
       <template v-else-if="spec.eyes === 'wide'">
         <circle :cx="ex" :cy="g.ey" r="6" fill="#FFFFFF" :stroke="g.ink" stroke-width="2" />
         <circle :cx="ex" :cy="g.ey" r="2.4" :fill="g.ink" />
@@ -181,6 +205,12 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
           ? `M${ex - 4} ${g.ey - 4} L${ex + 3} ${g.ey} L${ex - 4} ${g.ey + 4}`
           : `M${ex + 4} ${g.ey - 4} L${ex - 3} ${g.ey} L${ex + 4} ${g.ey + 4}`"
         :stroke="g.ink" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round" />
+      <!-- 화남 눈썹 -->
+      <path v-if="spec.eyes === 'angry'"
+        :d="i === 0
+          ? `M${ex - 5} ${g.ey - 11} L${ex + 4} ${g.ey - 7}`
+          : `M${ex - 4} ${g.ey - 7} L${ex + 5} ${g.ey - 11}`"
+        :stroke="g.ink" stroke-width="2.4" stroke-linecap="round" />
       <!-- 시무룩 눈썹 -->
       <path v-if="spec.eyes === 'sad'"
         :d="i === 0
@@ -197,6 +227,9 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
       <path v-else-if="spec.mouth === 'big'"
         :d="`M${53} ${g.my - 1} Q60 ${g.my + 13} 67 ${g.my - 1} Z`"
         fill="#E86A7A" :stroke="g.ink" stroke-width="1.3" stroke-linejoin="round" />
+      <path v-else-if="spec.mouth === 'shout'"
+        :d="`M54 ${g.my} L66 ${g.my} L64 ${g.my + 6} L56 ${g.my + 6} Z`"
+        fill="#E86A7A" :stroke="g.ink" stroke-width="1.3" stroke-linejoin="round" />
       <ellipse v-else-if="spec.mouth === 'o'" cx="60" :cy="g.my + 3" rx="2.8" ry="3.3"
         fill="#E86A7A" :stroke="g.ink" stroke-width="1.2" />
       <template v-else-if="!isMajung">
@@ -204,11 +237,23 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
           :stroke="g.ink" stroke-width="2.4" fill="none" stroke-linecap="round" />
         <path v-else-if="spec.mouth === 'frown'" :d="`M54 ${g.my + 4} Q60 ${g.my - 1} 66 ${g.my + 4}`"
           :stroke="g.ink" stroke-width="2.4" fill="none" stroke-linecap="round" />
+        <path v-else-if="spec.mouth === 'line'" :d="`M55 ${g.my + 2} L65 ${g.my + 2}`"
+          :stroke="g.ink" stroke-width="2.4" stroke-linecap="round" />
         <path v-else-if="spec.mouth === 'wave'"
           :d="`M52 ${g.my + 2} Q55 ${g.my - 1} 58 ${g.my + 2} Q61 ${g.my + 5} 64 ${g.my + 2} Q67 ${g.my - 1} 68 ${g.my + 1}`"
           :stroke="g.ink" stroke-width="2" fill="none" stroke-linecap="round" />
       </template>
     </g>
+
+    <!-- 얼굴에 댄 손 / 날개 (앞 레이어) -->
+    <template v-if="frontHand">
+      <g v-if="isMajung" :transform="wingT(wingRot[0])">
+          <path d="M46 84 Q24 86 18 104 Q14 114 15 125 L20 120 L21 128 L26 121 L28 127 Q37 112 47 98 Z" fill="#1B1F2A" />
+          <path d="M41 92 Q29 98 25 110 Q31 106 37 102 Q41 99 43 96 Z" fill="#FFFFFF" />
+          <path d="M24 108 Q18 116 18 123 L21 119 Q24 113 28 109 Z" fill="#3D7BE0" />
+      </g>
+      <circle v-else :cx="hands[0][0]" :cy="hands[0][1]" r="9" fill="#FFFFFF" stroke="#9AA1AA" stroke-width="2" />
+    </template>
 
     <!-- 마중이 부리 + 역무원 모자 (얼굴 위에 그림) -->
     <g v-if="isMajung">
@@ -239,28 +284,42 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
       <circle cx="60" cy="3" r="2" fill="#FFFFFF" opacity="0.9" />
     </g>
 
+    </g>
+
     <!-- ─────────── 감정 이펙트 ─────────── -->
     <g class="fx">
-      <template v-if="spec.fx === 'hearts'">
-        <path :d="HEART" :transform="`translate(${g.fx} ${g.fy + 6}) scale(1.6)`" fill="#E8455A" />
-        <path :d="HEART" :transform="`translate(${g.fx - 10} ${g.fy - 6}) scale(1.1)`" fill="#FF7A8A" />
-        <path :d="HEART" :transform="`translate(14 ${g.fy + 14}) scale(1.2)`" fill="#FF7A8A" />
-      </template>
-      <template v-else-if="spec.fx === 'bang'">
+      <template v-if="spec.fx === 'bang'">
         <text :x="g.fx" :y="g.fy + 16" text-anchor="middle" font-size="22" font-weight="900"
           fill="#F39A1E" stroke="#FFFFFF" stroke-width="1" font-family="sans-serif">!</text>
         <path :d="`M${g.fx - 12} ${g.fy - 2} l-4 -4 M${g.fx + 10} ${g.fy - 4} l3 -5`"
           stroke="#F39A1E" stroke-width="2.2" stroke-linecap="round" />
       </template>
+      <text v-else-if="spec.fx === 'question'" :x="g.fx" :y="g.fy + 18" text-anchor="middle" font-size="22" font-weight="900"
+        fill="#3D7BE0" stroke="#FFFFFF" stroke-width="1" font-family="sans-serif">?</text>
+      <g v-else-if="spec.fx === 'dots'" fill="#5B6B8C">
+        <circle :cx="g.fx - 4" :cy="g.fy + 18" r="2.2" />
+        <circle :cx="g.fx + 3" :cy="g.fy + 18" r="2.2" />
+        <circle :cx="g.fx + 10" :cy="g.fy + 18" r="2.2" />
+      </g>
+      <!-- 💢 화남 표시 -->
+      <g v-else-if="spec.fx === 'anger'" :transform="`translate(${g.fx + 4} ${g.fy + 2})`"
+        stroke="#E53935" stroke-width="2.6" fill="none" stroke-linecap="round">
+        <path d="M-7 -2 Q-2 -2 -2 -7" /><path d="M2 -7 Q2 -2 7 -2" />
+        <path d="M-7 2 Q-2 2 -2 7" /><path d="M2 7 Q2 2 7 2" />
+      </g>
+      <!-- 한숨 구름 -->
+      <g v-else-if="spec.fx === 'sigh'" :transform="`translate(${g.cx2 + 12} ${g.cy + 4})`"
+        fill="#FFFFFF" stroke="#9AA6B8" stroke-width="1.3">
+        <circle cx="0" cy="0" r="4.5" /><circle cx="6" cy="-2" r="5.5" /><circle cx="12" cy="1" r="4" />
+      </g>
+      <g v-else-if="spec.fx === 'note'" fill="#7B5BD6" font-weight="900" font-family="sans-serif">
+        <text :x="g.fx - 12" :y="g.fy + 22" font-size="15">♪</text>
+        <text :x="g.fx - 2" :y="g.fy + 8" font-size="12">♫</text>
+        <path :d="`M${g.fx - 26} ${g.fy + 26} q4 -4 8 0 t8 0`" stroke="#7B5BD6" stroke-width="1.8" fill="none" stroke-linecap="round" />
+      </g>
       <template v-else-if="spec.fx === 'tear'">
         <path :d="`M${g.ex2 + 5} ${g.ey + 5} q-3 5 0 7 q3 -2 0 -7 Z`" fill="#6FB6FF" stroke="#3D8FE0" stroke-width="0.8" />
-        <path :d="`M${g.fx - 4} ${g.fy + 4} q-4 6 0 9 q4 -3 0 -9 Z`" fill="#9CCBFF" opacity="0.8" />
       </template>
-      <g v-else-if="spec.fx === 'zzz'" fill="#5B6B8C" font-weight="900" font-family="sans-serif">
-        <text :x="g.fx - 14" :y="g.fy + 20" font-size="10">z</text>
-        <text :x="g.fx - 8" :y="g.fy + 10" font-size="13">z</text>
-        <text :x="g.fx - 1" :y="g.fy" font-size="16">Z</text>
-      </g>
       <template v-else-if="spec.fx === 'sparkle'">
         <path :d="SPARK" :transform="`translate(${g.fx} ${g.fy + 8}) scale(1.4)`" fill="#FFC83D" />
         <path :d="SPARK" :transform="`translate(${g.fx - 8} ${g.fy - 6}) scale(0.8)`" fill="#FFE08A" />
@@ -269,9 +328,6 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
       <template v-else-if="spec.fx === 'lines'">
         <path d="M12 40 l6 6 M8 54 l7 2 M108 40 l-6 6 M112 54 l-7 2"
           stroke="#FF9F1C" stroke-width="2.5" stroke-linecap="round" />
-      </template>
-      <template v-else-if="spec.fx === 'sweat'">
-        <path :d="`M${g.fx - 6} ${g.fy + 10} q-3 5 0 7 q3 -2 0 -7 Z`" fill="#9CCBFF" stroke="#3D8FE0" stroke-width="0.8" />
       </template>
     </g>
   </svg>
@@ -283,22 +339,27 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
 .mascot-svg.idle      { animation: float 3s ease-in-out infinite; }
 .mascot-svg.happy     { animation: bounce 0.6s ease-in-out 2; }
 .mascot-svg.excited   { animation: spin-bounce 0.5s ease-in-out infinite alternate; }
-.mascot-svg.cheer     { animation: bounce 0.5s ease-in-out infinite; }
-.mascot-svg.love      { animation: pulse 0.9s ease-in-out infinite; }
-.mascot-svg.surprised { animation: jump 0.35s ease-out 1; }
-.mascot-svg.sad       { animation: droop 0.5s ease forwards; transform-origin: center bottom; }
-.mascot-svg.sleepy    { animation: sway 2.4s ease-in-out infinite; transform-origin: center bottom; }
 .mascot-svg.shy       { animation: shrink 0.4s ease forwards; transform-origin: center bottom; }
+.mascot-svg.sad,
+.mascot-svg.sigh      { animation: droop 0.5s ease forwards; transform-origin: center bottom; }
+.mascot-svg.angry     { animation: shake 0.3s ease-in-out 3; }
+.mascot-svg.confused,
+.mascot-svg.curious,
+.mascot-svg.humming   { animation: sway 2.4s ease-in-out infinite; transform-origin: center bottom; }
+.mascot-svg.hype,
+.mascot-svg.laugh     { animation: bounce 0.5s ease-in-out infinite; }
+.mascot-svg.aha,
+.mascot-svg.surprised { animation: jump 0.35s ease-out 1; }
 
-.mascot-svg.sleepy .fx { animation: rise 2.4s ease-in-out infinite; }
-.mascot-svg.love .fx   { animation: rise 1.8s ease-in-out infinite; }
+.mascot-svg.humming .fx,
+.mascot-svg.blank .fx { animation: rise 1.8s ease-in-out infinite; }
 
 @keyframes float   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 @keyframes bounce  { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-12px); } }
 @keyframes spin-bounce { 0% { transform: translateY(0) rotate(-3deg); } 100% { transform: translateY(-8px) rotate(3deg); } }
-@keyframes pulse   { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
 @keyframes jump    { 0% { transform: translateY(0); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0); } }
 @keyframes droop   { to { transform: scale(0.96, 0.92); } }
+@keyframes shake   { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 @keyframes sway    { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
 @keyframes shrink  { 0% { transform: scale(1); } 50% { transform: scale(0.88); } 100% { transform: scale(0.94); } }
 @keyframes rise    { 0%, 100% { transform: translateY(0); opacity: 1; } 50% { transform: translateY(-4px); opacity: 0.7; } }

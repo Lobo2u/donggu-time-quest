@@ -12,6 +12,7 @@ const defaultState = () => ({
   // 미션투어 코스: 완주 보상 수령 여부, 획득 뱃지
   courses: {},       // { [courseId]: { rewardClaimed: bool } }
   badges: [],        // 획득한 완주 뱃지 이름들
+  seenStories: [],   // 이미 본 스토리 대화 id (StoryDialog)
   locations: {
     sojedom: { status: 'available', missionComplete: false, arrivedOnce: false },
     jungang: { status: 'locked',    missionComplete: false, arrivedOnce: false },

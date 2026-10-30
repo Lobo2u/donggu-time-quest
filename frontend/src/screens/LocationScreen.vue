@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { game, markArrived, distanceTo } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
 import { react } from '../store/reactionStore.js'
+import { playStory } from '../store/storyStore.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -44,7 +45,8 @@ async function checkGPS() {
 
 function confirmArrival() {
   markArrived(locationId)
-  react('arrive')
+  // 처음 온 장소면 도착 스토리, 이미 봤으면 짧은 말풍선
+  if (!playStory(`arrive-${locationId}`)) react('arrive')
   router.push(`/minigame/${locationId}`)
 }
 

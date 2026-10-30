@@ -1,7 +1,7 @@
 {
   "image": "mascot-sheet.png",
   "size": {
-    "w": 2400,
+    "w": 1680,
     "h": 560
   },
   "frame": {
@@ -20,91 +20,61 @@
       "h": 280
     },
     {
-      "name": "majung-happy",
+      "name": "majung-blank",
       "character": "majung",
-      "emote": "happy",
-      "label": "반가워요",
+      "emote": "blank",
+      "label": "멍…",
       "x": 240,
       "y": 0,
       "w": 240,
       "h": 280
     },
     {
-      "name": "majung-excited",
+      "name": "majung-angry",
       "character": "majung",
-      "emote": "excited",
-      "label": "신나요",
+      "emote": "angry",
+      "label": "화남",
       "x": 480,
       "y": 0,
       "w": 240,
       "h": 280
     },
     {
-      "name": "majung-love",
+      "name": "majung-sigh",
       "character": "majung",
-      "emote": "love",
-      "label": "좋아요",
+      "emote": "sigh",
+      "label": "한숨",
       "x": 720,
       "y": 0,
       "w": 240,
       "h": 280
     },
     {
-      "name": "majung-cheer",
+      "name": "majung-confused",
       "character": "majung",
-      "emote": "cheer",
-      "label": "화이팅",
+      "emote": "confused",
+      "label": "갸우뚱",
       "x": 960,
       "y": 0,
       "w": 240,
       "h": 280
     },
     {
-      "name": "majung-surprised",
+      "name": "majung-hype",
       "character": "majung",
-      "emote": "surprised",
-      "label": "깜짝!",
+      "emote": "hype",
+      "label": "신남",
       "x": 1200,
       "y": 0,
       "w": 240,
       "h": 280
     },
     {
-      "name": "majung-shy",
+      "name": "majung-aha",
       "character": "majung",
-      "emote": "shy",
-      "label": "부끄부끄",
+      "emote": "aha",
+      "label": "아하!",
       "x": 1440,
-      "y": 0,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "majung-oops",
-      "character": "majung",
-      "emote": "oops",
-      "label": "앗차",
-      "x": 1680,
-      "y": 0,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "majung-sad",
-      "character": "majung",
-      "emote": "sad",
-      "label": "시무룩",
-      "x": 1920,
-      "y": 0,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "majung-sleepy",
-      "character": "majung",
-      "emote": "sleepy",
-      "label": "졸려요",
-      "x": 2160,
       "y": 0,
       "w": 240,
       "h": 280
@@ -120,41 +90,11 @@
       "h": 280
     },
     {
-      "name": "jungang-happy",
+      "name": "jungang-curious",
       "character": "jungang",
-      "emote": "happy",
-      "label": "반가워요",
+      "emote": "curious",
+      "label": "갸우뚱",
       "x": 240,
-      "y": 280,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "jungang-excited",
-      "character": "jungang",
-      "emote": "excited",
-      "label": "신나요",
-      "x": 480,
-      "y": 280,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "jungang-love",
-      "character": "jungang",
-      "emote": "love",
-      "label": "좋아요",
-      "x": 720,
-      "y": 280,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "jungang-cheer",
-      "character": "jungang",
-      "emote": "cheer",
-      "label": "화이팅",
-      "x": 960,
       "y": 280,
       "w": 240,
       "h": 280
@@ -164,47 +104,47 @@
       "character": "jungang",
       "emote": "surprised",
       "label": "깜짝!",
+      "x": 480,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-sigh",
+      "character": "jungang",
+      "emote": "sigh",
+      "label": "한숨",
+      "x": 720,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-blank",
+      "character": "jungang",
+      "emote": "blank",
+      "label": "멍…",
+      "x": 960,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-laugh",
+      "character": "jungang",
+      "emote": "laugh",
+      "label": "폭소",
       "x": 1200,
       "y": 280,
       "w": 240,
       "h": 280
     },
     {
-      "name": "jungang-shy",
+      "name": "jungang-humming",
       "character": "jungang",
-      "emote": "shy",
-      "label": "부끄부끄",
+      "emote": "humming",
+      "label": "콧노래",
       "x": 1440,
-      "y": 280,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "jungang-oops",
-      "character": "jungang",
-      "emote": "oops",
-      "label": "앗차",
-      "x": 1680,
-      "y": 280,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "jungang-sad",
-      "character": "jungang",
-      "emote": "sad",
-      "label": "시무룩",
-      "x": 1920,
-      "y": 280,
-      "w": 240,
-      "h": 280
-    },
-    {
-      "name": "jungang-sleepy",
-      "character": "jungang",
-      "emote": "sleepy",
-      "label": "졸려요",
-      "x": 2160,
       "y": 280,
       "w": 240,
       "h": 280

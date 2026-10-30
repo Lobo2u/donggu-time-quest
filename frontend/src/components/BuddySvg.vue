@@ -27,7 +27,7 @@ const isMajung = computed(() => props.variant === 'majung')
 // 빛 조각 캐릭터는 기본 4표정만 있으므로 마스코트 전용 표정은 가까운 표정으로 대체
 const m = computed(() => {
   if (['idle', 'shy', 'happy', 'excited'].includes(props.mood)) return props.mood
-  return ['sad', 'sleepy', 'oops'].includes(props.mood) ? 'shy' : 'happy'
+  return ['sad', 'sigh', 'blank', 'angry'].includes(props.mood) ? 'shy' : 'happy'
 })
 </script>
 

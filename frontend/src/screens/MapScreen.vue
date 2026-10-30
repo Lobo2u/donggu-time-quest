@@ -6,6 +6,7 @@ import 'leaflet/dist/leaflet.css'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
 import OnboardingTour from '../components/OnboardingTour.vue'
+import { playStory } from '../store/storyStore.js'
 import { game, resetGame, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import {
   geo, effectivePos, distanceMeters, bearing, bearingLabel, fmtDistance,
@@ -266,7 +267,7 @@ function renderPlayer() {
     const icon = L.divIcon({
       html: `<div class="lf-user-marker">
                <div class="lf-user-pulse"></div>
-               <div class="lf-user-avatar">${guideVariant() === 'jungang' ? '🏪' : '🐧'}</div>
+               <div class="lf-user-avatar"><img src="${import.meta.env.BASE_URL}sprites/png/${guideVariant() === 'jungang' ? 'jungang' : 'majung'}-idle.png" alt=""></div>
              </div>`,
       className: '', iconSize: [46, 46], iconAnchor: [23, 23],
     })
@@ -401,6 +402,12 @@ function pickFromRadar(entry) {
 }
 
 // ── 라이프사이클 ──────────────────────────────────────────────────────────────
+// 첫 진입: 온보딩 투어(카드)를 마친 뒤 스토리 대화 시작
+const TOUR_KEY = 'dtq-onboarded'
+onMounted(() => {
+  try { if (localStorage.getItem(TOUR_KEY)) playStory('intro') } catch {}
+})
+
 onMounted(() => {
   initMap()
   startWatch()
@@ -428,7 +435,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="screen map-screen">
     <!-- 온보딩 튜토리얼 (최초 1회) -->
-    <OnboardingTour />
+    <OnboardingTour @done="playStory('intro')" />
 
     <!-- Leaflet 지도 컨테이너 -->
     <div ref="mapEl" class="leaflet-map-container" @click.self="selected = null"></div>

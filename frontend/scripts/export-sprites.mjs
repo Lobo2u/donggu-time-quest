@@ -3,7 +3,7 @@
 // 결과: public/sprites/
 //   svg/{캐릭터}-{표정}.svg   개별 SVG
 //   png/{캐릭터}-{표정}.png   개별 PNG (240×280, 투명 배경)
-//   mascot-sheet.svg / .png    스프라이트 시트 (행 = 캐릭터, 열 = 표정)
+//   mascot-sheet.svg / .png    스프라이트 시트 (행 = 캐릭터, 열 = 기본 + 표정 6종)
 //   mascot-sheet.json          시트 프레임 좌표 (게임 엔진용)
 // PNG 는 Playwright(Chromium) 가 있을 때만 만든다.
 import { mkdir, writeFile, rm } from 'node:fs/promises'
@@ -23,7 +23,7 @@ const server = await createServer({ root, server: { middlewareMode: true }, appT
 
 try {
   const { default: MascotSvg } = await server.ssrLoadModule('/src/components/MascotSvg.vue')
-  const { EMOTES, MASCOTS } = await server.ssrLoadModule('/src/data/emotes.js')
+  const { EMOTE_SETS, MASCOTS } = await server.ssrLoadModule('/src/data/emotes.js')
 
   const render = async (props) => {
     const html = await renderToString(createSSRApp({ render: () => h(MascotSvg, { ...props, animated: false }) }))
@@ -42,7 +42,8 @@ try {
   const characters = Object.keys(MASCOTS)
 
   for (const [row, character] of characters.entries()) {
-    for (const [col, emote] of EMOTES.entries()) {
+    const emotes = [{ id: 'idle', label: '기본' }, ...EMOTE_SETS[character]]
+    for (const [col, emote] of emotes.entries()) {
       const name = `${character}-${emote.id}`
       const svg = await render({ character, mood: emote.id, size: FRAME_W })
       await writeFile(path.join(outDir, 'svg', `${name}.svg`), `<?xml version="1.0" encoding="UTF-8"?>\n${svg}\n`)
@@ -54,7 +55,7 @@ try {
     }
   }
 
-  const sheetW = EMOTES.length * FRAME_W
+  const sheetW = Math.max(...characters.map(c => EMOTE_SETS[c].length + 1)) * FRAME_W
   const sheetH = characters.length * FRAME_H
   const sheetSvg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${sheetW}" height="${sheetH}" viewBox="0 0 ${sheetW} ${sheetH}">\n${sheetParts.join('\n')}\n</svg>\n`
   await writeFile(path.join(outDir, 'mascot-sheet.svg'), sheetSvg)

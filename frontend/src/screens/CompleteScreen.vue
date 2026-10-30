@@ -1,9 +1,10 @@
 <script setup>
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { game } from '../store/gameStore.js'
 import { BUDDIES, LOCATIONS } from '../data/gameData.js'
 import BuddySvg from '../components/BuddySvg.vue'
+import { playStory } from '../store/storyStore.js'
 
 const router = useRouter()
 const reward = game.lastReward
@@ -13,6 +14,9 @@ const locName = buddy ? Object.values(LOCATIONS).find(l => l.buddyId === reward?
 const nextAvailable = computed(() =>
   Object.values(LOCATIONS).find(l => game.locations[l.id]?.status === 'available')
 )
+
+// 첫 미션 완료 시 보상 안내
+onMounted(() => { if (reward) playStory('first-win') })
 
 // 이 화면을 떠날 때 보상 데이터 초기화 (중복 표시 방지)
 onBeforeUnmount(() => { game.lastReward = null })
