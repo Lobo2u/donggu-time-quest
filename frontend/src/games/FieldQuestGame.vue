@@ -7,6 +7,7 @@ import { BUDDIES, clueAnswer, lockCode } from '../data/gameData.js'
 import { computeHash, hexToHash, similarity, MATCH_THRESHOLD } from '../utils/imageHash.js'
 import { photoRefs } from '../store/photoRefStore.js'
 import BeforeAfterReveal from '../components/BeforeAfterReveal.vue'
+import { react } from '../store/reactionStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
@@ -144,6 +145,7 @@ function checkLock() {
     setTimeout(() => emit('win'), 1100)
   } else {
     wrong.value = true
+    react('wrong')
     setTimeout(() => { wrong.value = false; digits.value = [] }, 900)
   }
 }

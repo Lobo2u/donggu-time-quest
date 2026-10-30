@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node --test"
+    "check": "node --test",
+    "sprites": "node scripts/export-sprites.mjs"
   },
   "dependencies": {
     "jsqr": "^1.4.0",

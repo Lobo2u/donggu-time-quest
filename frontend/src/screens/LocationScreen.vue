@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { game, markArrived, distanceTo } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
+import { react } from '../store/reactionStore.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -43,6 +44,7 @@ async function checkGPS() {
 
 function confirmArrival() {
   markArrived(locationId)
+  react('arrive')
   router.push(`/minigame/${locationId}`)
 }
 

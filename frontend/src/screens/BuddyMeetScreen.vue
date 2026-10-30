@@ -57,7 +57,7 @@ function selectChoice(choice, choiceIndex) {
       }
     }, 1200)
   } else {
-    buddyMood.value = 'shy'
+    buddyMood.value = 'sad'
     wrongChoice.value = choice.hint
 
     setTimeout(() => {
