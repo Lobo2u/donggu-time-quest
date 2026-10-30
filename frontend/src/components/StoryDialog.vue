@@ -75,14 +75,15 @@ function advance() {
 .story-box {
   position: relative; width: 100%; max-width: 480px; min-height: 132px;
   background: var(--white); border: 3px solid var(--navy); border-radius: 18px;
-  padding: 30px 18px 30px; box-shadow: 0 8px 24px #0004;
+  padding: 40px 18px 30px; box-shadow: 0 8px 24px #0004;
 }
 .story-portrait {
   position: absolute; left: 4px; top: -124px;
   animation: pop-in 0.25s ease-out;
 }
 .story-name {
-  position: absolute; left: 118px; top: -15px;
+  /* 캐릭터 몸 바로 아래, 가운데 */
+  position: absolute; left: 60px; top: 6px; transform: translateX(-50%);
   padding: 4px 14px; border-radius: 12px;
   font-size: 13px; font-weight: 900; color: var(--white);
   background: #1F2D55;
