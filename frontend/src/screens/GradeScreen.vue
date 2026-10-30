@@ -15,6 +15,8 @@ function state(g) {
   return 'locked'
 }
 const label = { done: '달성', current: '현재', locked: '잠김' }
+// 사다리처럼 아래(Lv.1)에서 위(Lv.5)로 올라가게 높은 등급부터 표시
+const ladder = computed(() => [...GRADES].sort((a, b) => b.level - a.level))
 </script>
 
 <template>
@@ -39,7 +41,7 @@ const label = { done: '달성', current: '현재', locked: '잠김' }
         <p v-else class="my-next">가장 높은 등급이에요</p>
       </section>
 
-      <div v-for="g in GRADES" :key="g.id" class="gr-row" :class="state(g)">
+      <div v-for="g in ladder" :key="g.id" class="gr-row" :class="state(g)">
         <span class="fruit"><FruitIcon :id="g.id" /></span>
         <div class="gr-text">
           <p class="gr-name">{{ g.name }} 등급 · Lv.{{ g.level }}</p>
