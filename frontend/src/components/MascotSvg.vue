@@ -39,13 +39,6 @@ const hands = computed(() => ({
   tuck:  [[24, 102], [96, 102]],
 }[spec.value.pose] ?? [[19, 94], [101, 94]]))
 
-// 마중이 벌린 부리 (안쪽 / 아래 부리)
-const beakOpen = computed(() => ({
-  open: { inner: 'M54.5 66.5 Q60 77 65.5 66.5 Z', lower: 'M55 70 Q60 79 65 70 Q60 75.5 55 70 Z' },
-  big:  { inner: 'M53.5 66.5 Q60 81 66.5 66.5 Z', lower: 'M54 71 Q60 83 66 71 Q60 79 54 71 Z' },
-  o:    { inner: 'M56 67.5 Q60 74.5 64 67.5 Z',   lower: 'M56.5 70 Q60 76 63.5 70 Q60 73.5 56.5 70 Z' },
-}[spec.value.mouth] ?? null))
-
 const HEART = 'M0 3 C-4 0 -4.2 -4 -1.6 -4 C-0.6 -4 0 -3.2 0 -2.6 C0 -3.2 0.6 -4 1.6 -4 C4.2 -4 4 0 0 3 Z'
 const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
 </script>
@@ -196,7 +189,7 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
         :stroke="g.ink" stroke-width="2" stroke-linecap="round" />
     </g>
 
-    <!-- 입 (중앙이) — 마중이는 따로 입을 그리지 않고 부리를 벌린다 -->
+    <!-- 입 (중앙이) — 마중이는 부리만 그린다 -->
     <g v-if="!isMajung">
       <path v-if="spec.mouth === 'open'"
         :d="`M${55} ${g.my} Q60 ${g.my + 9} 65 ${g.my} Z`"
@@ -219,14 +212,8 @@ const SPARK = 'M0 -5 Q1 -1 5 0 Q1 1 0 5 Q-1 1 -5 0 Q-1 -1 0 -5 Z'
 
     <!-- 마중이 부리 + 역무원 모자 (얼굴 위에 그림) -->
     <g v-if="isMajung">
-      <!-- 부리: open/big/o 는 아래 부리를 벌려 안쪽(분홍)을 보여 준다 -->
-      <template v-if="beakOpen">
-        <path :d="beakOpen.inner" fill="#E86A7A" stroke="#2B2F38" stroke-width="0.8" stroke-linejoin="round" />
-        <path :d="beakOpen.lower" fill="#4A4F5A" stroke="#2B2F38" stroke-width="0.8" stroke-linejoin="round" />
-        <path d="M53 65 Q60 61.5 67 65 Q63 68.5 60 69.5 Q57 68.5 53 65 Z"
-          fill="#4A4F5A" stroke="#2B2F38" stroke-width="0.8" stroke-linejoin="round" />
-      </template>
-      <path v-else :d="spec.mouth === 'frown' ? 'M54 67 Q60 65 66 67 L60 71.5 Z' : 'M54 66 Q60 63 66 66 L60 71 Z'"
+      <!-- 부리: 입을 따로 그리지 않고 늘 닫힌 부리 (표정은 눈·이펙트로) -->
+      <path :d="spec.mouth === 'frown' ? 'M54 67 Q60 65 66 67 L60 71.5 Z' : 'M54 66 Q60 63 66 66 L60 71 Z'"
         fill="#4A4F5A" stroke="#2B2F38" stroke-width="0.8" stroke-linejoin="round" />
       <path d="M30 40 Q28 18 60 16 Q94 18 92 38 Q86 44 60 44 Q36 44 30 40 Z" fill="#1E2D5A" stroke="#141E3C" stroke-width="1.2" />
       <rect x="33" y="38" width="54" height="6" fill="#141E3C" />
