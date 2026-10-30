@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { game, markArrived, distanceTo } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
@@ -81,14 +81,103 @@ function confirmArrival() {
   router.push(`/minigame/${locationId}`)
 }
 
-onMounted(() => {
+// ── 카메라 도착 화면: 카메라 + 틀 안의 앱 안 QR + 자동으로 올라가는 스토리 ──
+const camVideo = ref(null)
+const camError = ref('')
+let camStream = null
+
+const qrVisible = computed(() => game.demoMode || gpsState.value === 'near')
+const frameMsg = computed(() => ({
+  idle: '위치를 확인하고 있어요',
+  checking: '위치를 확인하고 있어요…',
+  far: `건물 앞 ${CHECKIN_RADIUS}m 안으로 오면 QR이 떠요${userDistance.value != null ? ` · 약 ${userDistance.value}m` : ''}`,
+  denied: '위치 권한이 필요해요',
+}[gpsState.value] ?? ''))
+
+async function startCamera() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+    if (camVideo.value) {
+      camVideo.value.srcObject = camStream
+      await camVideo.value.play().catch(() => {})
+    }
+  } catch (e) {
+    camError.value = e?.name === 'NotAllowedError' ? '카메라 권한이 필요해요' : '카메라를 켜지 못했어요'
+  }
+}
+
+// 스토리: 한 번 천천히 올라가고 끝에서 멈춤. 손으로 만지면 자동 스크롤은 그만.
+const storyEl = ref(null)
+let scrollRaf = null
+let scrollStart = null
+const SCROLL_SPEED = 22 // px/s
+function autoScroll(t) {
+  const el = storyEl.value
+  if (!el) return
+  scrollStart ??= { t, top: el.scrollTop }
+  const target = scrollStart.top + ((t - scrollStart.t) / 1000) * SCROLL_SPEED
+  el.scrollTop = target
+  if (el.scrollTop + el.clientHeight < el.scrollHeight - 1) scrollRaf = requestAnimationFrame(autoScroll)
+}
+function stopAutoScroll() { cancelAnimationFrame(scrollRaf); scrollRaf = null }
+
+onMounted(async () => {
   // 시연 모드가 아니고 이전에 GPS를 켠 적 없으면 자동 시도
   if (!game.demoMode) checkGPS()
+  if (alreadyComplete.value) return
+  startCamera()
+  await nextTick()
+  setTimeout(() => { scrollRaf = requestAnimationFrame(autoScroll) }, 900)
+})
+onBeforeUnmount(() => {
+  stopAutoScroll()
+  camStream?.getTracks().forEach(t => t.stop())
 })
 </script>
 
 <template>
-  <div class="screen location-screen">
+  <!-- 카메라 도착 화면 -->
+  <div v-if="!alreadyComplete" class="screen cam-arrival">
+    <video ref="camVideo" class="ca-video" playsinline muted></video>
+    <div v-if="camError" class="ca-cam-err">{{ camError }}</div>
+
+    <div class="ca-head">
+      <button class="ca-back" aria-label="지도로" @click="$router.push('/map')">
+        <span class="msr" style="font-size:24px; color:white">arrow_back</span>
+      </button>
+      <span class="ca-title">{{ loc.name }}</span>
+      <span class="ca-demo" v-if="game.demoMode">시연</span>
+    </div>
+
+    <!-- 네 모서리 틀: 건물 앞이면 앱 안 QR 이 이 안에 뜸 -->
+    <div class="ca-frame">
+      <i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>
+      <ArrivalQr v-if="qrVisible" :payload="loc.qrCode" :busy="checking" @press="checkIn" />
+      <p v-else class="ca-frame-msg">{{ frameMsg }}</p>
+    </div>
+    <p v-if="checkinError" class="ca-error">{{ checkinError }}</p>
+    <div v-if="!game.demoMode && (gpsState === 'far' || gpsState === 'denied')" class="ca-actions">
+      <button v-if="gpsState === 'far'" class="ca-chip" @click="checkGPS">다시 확인</button>
+      <button class="ca-chip solid" @click="game.demoMode = true">시연 모드로 진행</button>
+    </div>
+
+    <!-- 스토리: 자동으로 천천히 올라감 -->
+    <div class="ca-story">
+      <span class="ca-story-label">스토리</span>
+      <div class="ca-story-scroll" ref="storyEl" @pointerdown="stopAutoScroll" @wheel="stopAutoScroll">
+        <div class="ca-spacer"></div>
+        <p v-for="(line, i) in loc.storyContext" :key="i" class="ca-line">{{ line }}</p>
+        <p class="ca-note">{{ loc.storyNote }}</p>
+        <p class="ca-real">{{ loc.realNote }}</p>
+        <button v-if="!game.checkIns?.[locationId]" class="ca-qr-link" @click="$router.push('/qrscan?from=' + locationId)">
+          <span class="msr" style="font-size:16px">qr_code_scanner</span>
+          가게 QR을 스캔하면 시간 친구가 강화돼요
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div v-else class="screen location-screen">
     <!-- 상단 헤더 -->
     <div class="loc-header">
       <button class="back-btn" @click="$router.push('/map')">
@@ -243,6 +332,68 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* ── 카메라 도착 화면 ── */
+.cam-arrival { background: #1B2330; }
+.ca-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ca-cam-err {
+  position: absolute; left: 0; right: 0; top: 40%; text-align: center;
+  color: #C9D3DD; font-size: 13px; font-weight: 800;
+}
+.ca-head {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 8px; padding: 50px 16px 14px;
+  background: linear-gradient(#07243EE6, #07243E00);
+}
+.ca-back { background: none; border: none; cursor: pointer; padding: 0; display: flex; }
+.ca-title { font-size: 18px; font-weight: 900; color: white; text-shadow: 0 1px 4px #0008; }
+.ca-demo { margin-left: auto; background: var(--orange); color: var(--navy); border-radius: 8px; padding: 2px 8px; font-size: 11px; font-weight: 900; }
+
+.ca-frame {
+  position: absolute; left: 50%; top: 150px; width: 260px; height: 300px; margin-left: -130px; z-index: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.cn { position: absolute; width: 34px; height: 34px; border: 0 solid white; filter: drop-shadow(0 1px 3px #0008); }
+.cn.tl { left: 0; top: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 8px; }
+.cn.tr { right: 0; top: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 8px; }
+.cn.bl { left: 0; bottom: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 8px; }
+.cn.br { right: 0; bottom: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 8px; }
+.ca-frame-msg {
+  max-width: 200px; text-align: center; color: white; font-size: 13px; font-weight: 800;
+  line-height: 1.5; word-break: keep-all; text-shadow: 0 1px 4px #000a;
+}
+.ca-error {
+  position: absolute; left: 16px; right: 16px; top: 462px; z-index: 2; text-align: center;
+  font-size: 12px; font-weight: 800; color: white;
+  background: #D64B5FE6; border-radius: 10px; padding: 6px 10px;
+}
+.ca-actions { position: absolute; left: 0; right: 0; top: 500px; z-index: 2; display: flex; justify-content: center; gap: 8px; }
+.ca-chip {
+  border: 2px solid white; background: #0006; color: white; border-radius: 14px; padding: 8px 14px;
+  font-family: var(--font); font-size: 13px; font-weight: 800; cursor: pointer;
+}
+.ca-chip.solid { background: var(--orange); border-color: var(--orange); color: var(--navy); }
+
+.ca-story {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 270px; z-index: 2;
+  background: #0B2A45F0; border-radius: 24px 24px 0 0; padding: 14px 20px 0;
+  box-shadow: 0 -6px 20px #0005; display: flex; flex-direction: column;
+}
+.ca-story-label { font-size: 12px; font-weight: 900; color: var(--orange); letter-spacing: 1px; margin-bottom: 8px; }
+.ca-story-scroll {
+  flex: 1; overflow-y: auto; scrollbar-width: none; padding-bottom: 24px;
+  -webkit-mask-image: linear-gradient(transparent 0, #000 18px, #000 calc(100% - 24px), transparent);
+          mask-image: linear-gradient(transparent 0, #000 18px, #000 calc(100% - 24px), transparent);
+}
+.ca-story-scroll::-webkit-scrollbar { display: none; }
+.ca-spacer { height: 150px; }  /* 글이 패널 아래에서 올라오며 시작 */
+.ca-line { font-size: 16px; font-weight: 700; color: white; line-height: 1.7; margin: 10px 0 14px; word-break: keep-all; }
+.ca-note { font-size: 11px; font-weight: 600; color: #9FB5CA; margin-bottom: 14px; }
+.ca-real { font-size: 12px; font-weight: 600; color: #C9D6E3; line-height: 1.6; word-break: keep-all; margin-bottom: 12px; }
+.ca-qr-link {
+  display: flex; align-items: center; gap: 6px; background: none; border: 1.5px solid #FFFFFF55; border-radius: 12px;
+  color: white; padding: 8px 12px; font-family: var(--font); font-size: 12px; font-weight: 800; cursor: pointer; margin-bottom: 8px;
+}
+
 .location-screen {
   background: var(--paper);
   display: flex; flex-direction: column; gap: 12px;
