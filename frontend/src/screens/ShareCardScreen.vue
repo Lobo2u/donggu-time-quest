@@ -124,7 +124,7 @@ async function shareCard() {
 
 /* ── 공유 카드 ── */
 .share-card {
-  background: linear-gradient(160deg, #062B48 0%, #0B5858 50%, #0E7B79 100%);
+  background: linear-gradient(160deg, #07243E 0%, #0F3558 50%, #1D4E7A 100%);
   border-radius: 28px; padding: 24px 20px 20px;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
   position: relative; overflow: hidden;

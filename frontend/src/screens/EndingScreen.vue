@@ -60,7 +60,7 @@ const router = useRouter()
 
 <style scoped>
 .ending-screen {
-  background: linear-gradient(180deg, #E8FFFB 0%, #C5EDE8 60%, #8FCECA 100%);
+  background: linear-gradient(180deg, #F7F5EF 0%, #ECE8DD 60%, #D9D1BC 100%);
   overflow: hidden;
 }
 

@@ -96,7 +96,7 @@ onBeforeUnmount(() => { game.lastReward = null })
 
 <style scoped>
 .complete-screen {
-  background: linear-gradient(180deg, #062B48 0%, #087D79 58%, #E7FFF9 100%);
+  background: linear-gradient(180deg, #07243E 0%, #1D4E7A 58%, #F3F1EA 100%);
   overflow: hidden;
 }
 

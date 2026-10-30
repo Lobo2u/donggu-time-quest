@@ -93,7 +93,7 @@ if (game.initialized) {
 
 <style scoped>
 .welcome-screen {
-  background: linear-gradient(180deg, #E8FFFB 0%, #BEEDE7 55%, #0E7B79 100%);
+  background: linear-gradient(180deg, #F7F5EF 0%, #DCE4EC 55%, #1D4E7A 100%);
 }
 
 .glow-one {
@@ -143,9 +143,9 @@ if (game.initialized) {
   border-radius: 24px;
 }
 
-.char-majung { background: linear-gradient(135deg, #7CE8D5, #4CB5AB); }
+.char-majung { background: linear-gradient(135deg, #2D5F8E, #0B2A45); }
 .char-jungang {
-  background: linear-gradient(135deg, #D4E8E6, #A8C4C2);
+  background: linear-gradient(135deg, #FFE1D9, #F4A79B);
   justify-content: center;
 }
 

@@ -176,7 +176,7 @@ onMounted(() => {
       <div v-else class="already-done">
         <span class="msr" style="font-size:36px; color:var(--teal)">check_circle</span>
         <p>이미 탐험을 완료한 장소예요!</p>
-        <div style="display:flex; gap:10px; margin-top:12px;">
+        <div style="display:flex; gap:10px; margin-top:12px; width:100%;">
           <button class="btn-secondary" style="flex:1" @click="$router.push('/map')">지도로</button>
           <button class="btn-primary" style="flex:1" @click="$router.push('/collection')">도감 보기</button>
         </div>
@@ -301,7 +301,7 @@ onMounted(() => {
 
 .qr-checkin-card {
   margin: 0 16px;
-  background: linear-gradient(135deg, #08233F, #0E4A4A);
+  background: linear-gradient(135deg, #07243E, #1D4E7A);
   border: 1px solid var(--orange);
   border-radius: 18px; padding: 14px 16px;
   display: flex; align-items: center; gap: 12px;
