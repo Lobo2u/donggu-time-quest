@@ -49,7 +49,8 @@ function confirmReset() {
           <MascotSvg :character="guide" mood="idle" :size="64" :animated="false" />
         </div>
         <div class="profile-texts">
-          <p class="profile-name">{{ game.player.nickname }}</p>
+          <!-- 이름: 로그인 등 실제 이름 연동 전까지 자리표시 -->
+          <p class="profile-name">OOO</p>
           <p class="profile-meta">Lv.{{ game.player.level }} · 동반자 {{ MASCOTS[guide].name }} ({{ guideRole }})</p>
           <button class="profile-link" @click="router.push('/grade')">
             등급 혜택 보기
