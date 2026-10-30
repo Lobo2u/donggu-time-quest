@@ -49,5 +49,6 @@ export default createRouter({
     { path: '/certificate/:courseId',component: CertificateScreen },
     { path: '/ranking',              component: RankingScreen },
     { path: '/grade',                component: GradeScreen },
+    { path: '/ar-building',          component: () => import('../screens/BuildingArScreen.vue') },
   ],
 })
