@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import { game, resetGame, courseProgress } from '../store/gameStore.js'
 import { LOCATIONS, BUDDIES, COURSES } from '../data/gameData.js'
+import TabBackButton from '../components/TabBackButton.vue'
 
 const router = useRouter()
 
@@ -31,6 +32,7 @@ function confirmReset() {
     <div class="rec-scroll">
       <!-- 헤더 -->
       <div class="rec-head">
+        <TabBackButton />
         <p class="record-eyebrow">MY QUEST LOG</p>
         <h1 class="record-title">내 탐험 기록</h1>
         <p class="record-sub">{{ game.player.nickname }} 님의 탐험 기록이에요.</p>
