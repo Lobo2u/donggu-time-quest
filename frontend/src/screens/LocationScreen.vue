@@ -5,6 +5,11 @@ import { game, markArrived, distanceTo } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
 import { react } from '../store/reactionStore.js'
 import { playStory } from '../store/storyStore.js'
+import ArrivalQr from '../components/ArrivalQr.vue'
+
+// 도착 확인 반경: 지도 근접 표시(arrivalRadius 300m)보다 좁게, 건물 앞에 있어야 QR 이 뜸.
+// GPS 오차는 최대 30m 까지만 봐줌 (byeol-night gpsCheck 와 같은 규칙)
+const CHECKIN_RADIUS = 50
 
 const router = useRouter()
 const route = useRoute()
@@ -16,6 +21,8 @@ if (!loc) router.replace('/map')
 const storyStep = ref(0)
 const gpsState = ref('idle') // idle | checking | near | far | denied
 const userDistance = ref(null)
+const checking = ref(false)   // 앱 안 QR 누른 뒤 확인 중
+const checkinError = ref('')
 
 const arrived = computed(() => {
   return game.demoMode
@@ -29,18 +36,42 @@ function nextStory() {
   if (storyStep.value < loc.storyContext.length) storyStep.value++
 }
 
+async function readGPS() {
+  const pos = await new Promise((res, rej) =>
+    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 })
+  )
+  const d = distanceTo(pos.coords.latitude, pos.coords.longitude, loc.lat, loc.lng)
+  userDistance.value = Math.round(d)
+  return d <= CHECKIN_RADIUS + Math.min(pos.coords.accuracy ?? 0, 30)
+}
+
 async function checkGPS() {
   gpsState.value = 'checking'
   try {
-    const pos = await new Promise((res, rej) =>
-      navigator.geolocation.getCurrentPosition(res, rej, { timeout: 8000 })
-    )
-    const d = distanceTo(pos.coords.latitude, pos.coords.longitude, loc.lat, loc.lng)
-    userDistance.value = Math.round(d)
-    gpsState.value = d <= loc.arrivalRadius ? 'near' : 'far'
+    gpsState.value = (await readGPS()) ? 'near' : 'far'
   } catch {
     gpsState.value = 'denied'
   }
+}
+
+// 앱 안 QR 누름 → 위치와 QR 내용을 함께 확인 (시연 모드는 위치 확인 생략)
+async function checkIn(payload) {
+  checking.value = true
+  checkinError.value = ''
+  try {
+    const gpsOk = game.demoMode || await readGPS()
+    if (!gpsOk) {
+      gpsState.value = 'far'
+      checkinError.value = '건물 앞으로 조금 더 가까이 가 주세요'
+    } else if (payload !== loc.qrCode) {
+      checkinError.value = 'QR을 확인하지 못했어요. 다시 눌러 주세요'
+    } else {
+      confirmArrival()
+    }
+  } catch {
+    checkinError.value = '위치를 확인하지 못했어요. 잠시 후 다시 눌러 주세요'
+  }
+  checking.value = false
 }
 
 function confirmArrival() {
@@ -114,14 +145,12 @@ onMounted(() => {
             <div class="arrival-sim">
               <span class="msr" style="font-size:32px; color:var(--teal)">location_on</span>
               <div>
-                <p class="arrival-title">{{ loc.name }} 도착 시뮬레이션</p>
-                <p class="arrival-sub">시연 모드 · 실제 GPS 인증을 대신해요</p>
+                <p class="arrival-title">{{ loc.name }} 앞에 QR이 떠 있어요</p>
+                <p class="arrival-sub">시연 모드 · 위치 확인 없이 QR만 눌러요</p>
               </div>
             </div>
-            <button class="btn-primary arrival-btn" @click="confirmArrival">
-              <span class="msr" style="font-size:22px; color:var(--navy)">play_circle</span>
-              탐험 시작 (시연)
-            </button>
+            <ArrivalQr :payload="loc.qrCode" :busy="checking" @press="checkIn" />
+            <p v-if="checkinError" class="checkin-error">{{ checkinError }}</p>
           </template>
 
           <!-- GPS 모드 -->
@@ -137,20 +166,18 @@ onMounted(() => {
             <div v-else-if="gpsState === 'near'" class="gps-near">
               <span class="msr" style="font-size:32px; color:var(--teal)">check_circle</span>
               <div>
-                <p class="arrival-title">{{ loc.name }} 도착 확인됨</p>
-                <p class="arrival-sub">{{ userDistance }}m · 도착 범위 안에 있어요</p>
+                <p class="arrival-title">건물 앞에 QR이 떠 있어요</p>
+                <p class="arrival-sub">{{ userDistance }}m · 누르면 도착을 확인하고 탐험이 시작돼요</p>
               </div>
             </div>
-            <button v-if="gpsState === 'near'" class="btn-primary arrival-btn" @click="confirmArrival">
-              <span class="msr" style="font-size:22px; color:var(--navy)">explore</span>
-              탐험 시작
-            </button>
+            <ArrivalQr v-if="gpsState === 'near'" :payload="loc.qrCode" :busy="checking" @press="checkIn" />
+            <p v-if="gpsState === 'near' && checkinError" class="checkin-error">{{ checkinError }}</p>
 
             <div v-else-if="gpsState === 'far'" class="gps-far">
               <span class="msr" style="font-size:32px; color:var(--muted)">location_searching</span>
               <div>
                 <p class="arrival-title">아직 {{ loc.name }}까지 거리가 있어요</p>
-                <p class="arrival-sub">현재 위치에서 약 {{ userDistance }}m · {{ loc.arrivalRadius }}m 안으로 이동하세요</p>
+                <p class="arrival-sub">현재 위치에서 약 {{ userDistance }}m · 건물 앞 {{ CHECKIN_RADIUS }}m 안에서 QR이 떠요</p>
               </div>
             </div>
             <div v-if="gpsState === 'far'" class="gps-actions">
@@ -292,6 +319,7 @@ onMounted(() => {
 .arrival-sub { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; word-break: keep-all; }
 .arrival-btn { width: 100%; }
 .gps-actions { display: flex; gap: 8px; }
+.checkin-error { font-size: 12px; font-weight: 800; color: #D64B5F; text-align: center; }
 
 .already-done {
   display: flex; flex-direction: column; align-items: center;

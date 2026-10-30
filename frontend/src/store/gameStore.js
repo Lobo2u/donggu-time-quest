@@ -34,6 +34,8 @@ const defaultState = () => ({
   },
   // 일일 탐험 보너스
   dailyBonus: { lastClaim: 0, streak: 0 },
+  // 발급한 파트너 쿠폰: 매장 리더기가 같은 번호를 읽도록 한 번 만든 번호를 유지
+  coupons: {},       // { [locationId]: { code: '12자리 숫자', issuedAt } }
   // persisted mid-mission state
   activeMission: null, // { locationId } | null
   lastReward: null,    // { buddyId, xpGained, shardsGained, leveledUp }
@@ -53,6 +55,7 @@ function loadSave() {
         buddies:    { ...base.buddies,    ...parsed.buddies },
         checkIns:   { ...base.checkIns,   ...parsed.checkIns },
         dailyBonus: { ...base.dailyBonus, ...parsed.dailyBonus },
+        coupons:    { ...base.coupons,    ...parsed.coupons },
         courses:    { ...base.courses,    ...parsed.courses },
         badges:     parsed.badges ?? base.badges,
       }

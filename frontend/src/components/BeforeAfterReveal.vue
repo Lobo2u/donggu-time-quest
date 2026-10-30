@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import SceneSvg from './SceneSvg.vue'
+import PastCameraOverlay from './PastCameraOverlay.vue'
 
 const props = defineProps({
   variant: { type: String, default: 'sojedom' },
@@ -9,6 +10,7 @@ const props = defineProps({
 const emit = defineEmits(['done'])
 
 const pos = ref(50)  // 슬라이더 위치 %
+const camOpen = ref(false) // 카메라 위에 옛 모습 겹쳐 보기
 const wrap = ref(null)
 let dragging = false
 
@@ -56,11 +58,16 @@ function move(e) {
       </div>
 
       <p class="ba-note">※ 역사 재현 일러스트(창작)입니다. 실제 과거 사진이 아니에요.</p>
+      <button class="ba-cam-btn" @click="camOpen = true">
+        <span class="msr" style="font-size:18px">photo_camera</span>
+        카메라로 건물에 겹쳐 보기
+      </button>
       <button class="ba-btn" @click="emit('done')">
         <span class="msr" style="font-size:20px; color:var(--navy)">palette</span>
         기억 복원하기
       </button>
     </div>
+    <PastCameraOverlay v-if="camOpen" :variant="variant" :label="label" @close="camOpen = false" />
   </div>
 </template>
 
@@ -83,5 +90,10 @@ function move(e) {
 .handle-knob { width: 34px; height: 34px; border-radius: 50%; background: white; box-shadow: 0 2px 8px #0005; display: flex; align-items: center; justify-content: center; z-index: 2; }
 
 .ba-note { font-size: 10px; font-weight: 600; color: var(--muted); text-align: center; word-break: keep-all; }
+.ba-cam-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px; height: 44px;
+  background: var(--white); color: var(--navy); border: 2px solid #0B2A4533; border-radius: 14px;
+  font-family: var(--font); font-size: 14px; font-weight: 800; cursor: pointer;
+}
 .ba-btn { margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; height: 52px; background: var(--orange); color: var(--navy); border: none; border-radius: 16px; font-family: var(--font); font-size: 16px; font-weight: 900; cursor: pointer; }
 </style>

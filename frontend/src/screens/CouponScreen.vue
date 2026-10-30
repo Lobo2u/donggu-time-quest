@@ -1,6 +1,9 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import QRCode from 'qrcode'
+import { game } from '../store/gameStore.js'
+import { drawBarcode } from '../utils/barcode.js'
 import { LOCATIONS, PARTNER_STORES, BUDDIES } from '../data/gameData.js'
 import { track } from '../store/statsStore.js'
 
@@ -14,18 +17,30 @@ const buddy  = loc ? BUDDIES[loc.buddyId] : null
 if (!loc || !store) router.replace('/map')
 else track('coupon', locationId)
 
-// 쿠폰 코드 생성 (장소 + 날짜 기반)
+// 쿠폰 번호: 12자리 숫자. 매장 리더기가 QR → 바코드 → 직원 번호 입력 순으로 같은 번호를 읽음
+// (byeol-night 쿠폰 방식). 한 번 발급하면 장소별로 저장해 다시 열어도 같은 번호.
 const today = new Date()
-const dateStr = `${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}`
-const rand = Math.floor(Math.random() * 900 + 100)
-const couponCode = `DRTQ-${locationId.toUpperCase().slice(0,3)}-${dateStr}-${rand}`
+if (store && !game.coupons[locationId]) {
+  const code = Array.from({ length: 12 }, () => Math.floor(Math.random() * 10)).join('')
+  game.coupons[locationId] = { code, issuedAt: Date.now() }
+}
+const couponCode = game.coupons[locationId]?.code ?? ''
+const spacedCode = couponCode.replace(/(\d{4})(?=\d)/g, '$1 ')
+
+const qrCanvas = ref(null)
+const barCanvas = ref(null)
+onMounted(() => {
+  if (!couponCode) return
+  QRCode.toCanvas(qrCanvas.value, couponCode, { margin: 1, width: 168 }).catch(() => {})
+  drawBarcode(barCanvas.value, couponCode)
+})
 
 const validUntil = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,'0')}.${String(today.getDate()).padStart(2,'0')} 자정`
 
 const shared = computed(() => false)
 
 async function share() {
-  const text = `동구 TIME QUEST 파트너 쿠폰\n${store.name} — ${store.offer}\n코드: ${couponCode}\n유효: ${validUntil}`
+  const text = `동구 TIME QUEST 파트너 쿠폰\n${store.name} — ${store.offer}\n번호: ${spacedCode}\n유효: ${validUntil}`
   if (navigator.share) {
     try { await navigator.share({ title: '동구 TIME QUEST 쿠폰', text }) } catch {}
   } else {
@@ -99,15 +114,17 @@ async function share() {
 
         <!-- 쿠폰 코드 -->
         <div class="code-section">
-          <p class="code-label">쿠폰 코드</p>
-          <p class="code-value">{{ couponCode }}</p>
+          <p class="code-label">매장 리더기에 QR을 보여 주세요</p>
+          <canvas ref="qrCanvas" class="coupon-qr" width="168" height="168"></canvas>
+          <canvas ref="barCanvas" class="coupon-bar" width="300" height="56"></canvas>
+          <p class="code-value" aria-label="쿠폰 번호">{{ spacedCode }}</p>
           <p class="code-valid">유효 기간: {{ validUntil }}까지</p>
         </div>
 
         <!-- 사용 방법 -->
         <div class="usage-note">
-          <span class="msr" style="font-size:16px; color:var(--teal-dark)">storefront</span>
-          <p>상점 방문 시 이 화면을 직원에게 보여주세요</p>
+          <span class="msr" style="font-size:16px; color:var(--teal-dark)">qr_code_scanner</span>
+          <p>QR이 안 읽히면 바코드, 그래도 안 되면 직원에게 번호를 불러 주세요</p>
         </div>
       </div>
 
@@ -234,6 +251,8 @@ async function share() {
   background: #F0F7F6; border-radius: 10px; padding: 8px;
 }
 .code-valid { font-size: 11px; font-weight: 700; color: var(--muted); }
+.coupon-qr { align-self: center; width: 168px; height: 168px; border-radius: 8px; }
+.coupon-bar { align-self: center; width: 100%; max-width: 300px; height: 56px; }
 
 .usage-note {
   display: flex; align-items: center; gap: 8px;
