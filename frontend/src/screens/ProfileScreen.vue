@@ -5,8 +5,14 @@ import BottomNavigation from '../components/BottomNavigation.vue'
 import { game, resetGame, courseProgress } from '../store/gameStore.js'
 import { LOCATIONS, BUDDIES, COURSES } from '../data/gameData.js'
 import TabBackButton from '../components/TabBackButton.vue'
+import MascotSvg from '../components/MascotSvg.vue'
+import { MASCOTS } from '../data/emotes.js'
 
 const router = useRouter()
+
+// 내 정보: 동반자 · 닉네임 · 레벨 (아래에 내 기록이 이어짐)
+const guide = computed(() => game.guide ?? 'majung')
+const guideRole = computed(() => guide.value === 'jungang' ? '단서 해독' : '길 안내')
 
 const completedLocs = computed(() =>
   Object.values(LOCATIONS).filter(l => game.locations[l.id]?.status === 'complete')
@@ -33,10 +39,27 @@ function confirmReset() {
       <!-- 헤더 -->
       <div class="rec-head">
         <TabBackButton />
-        <p class="record-eyebrow">MY QUEST LOG</p>
-        <h1 class="record-title">내 탐험 기록</h1>
-        <p class="record-sub">{{ game.player.nickname }} 님의 탐험 기록이에요.</p>
+        <p class="record-eyebrow">MY PAGE</p>
+        <h1 class="record-title">내 정보</h1>
       </div>
+
+      <!-- 프로필 -->
+      <div class="profile-card">
+        <div class="profile-guide">
+          <MascotSvg :character="guide" mood="idle" :size="64" :animated="false" />
+        </div>
+        <div class="profile-texts">
+          <p class="profile-name">{{ game.player.nickname }}</p>
+          <p class="profile-meta">Lv.{{ game.player.level }} · 동반자 {{ MASCOTS[guide].name }} ({{ guideRole }})</p>
+          <button class="profile-link" @click="router.push('/grade')">
+            등급 혜택 보기
+            <span class="msr" style="font-size:16px">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 내 기록 -->
+      <p class="record-section-head">내 기록</p>
 
       <!-- 통계 -->
       <div class="stats-row">
@@ -164,6 +187,24 @@ function confirmReset() {
 .record-eyebrow { font-size: 11px; font-weight: 900; color: var(--teal); letter-spacing: 1.4px; }
 .record-title { font-size: 26px; font-weight: 900; color: var(--ink); }
 .record-sub { font-size: 13px; font-weight: 600; color: var(--muted); word-break: keep-all; }
+
+.profile-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--navy); border-radius: 20px; padding: 14px 16px; box-shadow: var(--shadow);
+}
+.profile-guide {
+  width: 72px; height: 72px; border-radius: 50%; background: #FFFFFF14; flex-shrink: 0;
+  display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+}
+.profile-texts { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.profile-name { font-size: 18px; font-weight: 900; color: white; }
+.profile-meta { font-size: 12px; font-weight: 700; color: #BFD3E6; }
+.profile-link {
+  align-self: flex-start; display: flex; align-items: center; gap: 2px; margin-top: 4px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 900; color: var(--orange);
+}
+.record-section-head { font-size: 17px; font-weight: 900; color: var(--ink); margin-top: 4px; }
 
 .stats-row {
   background: var(--sky); border-radius: 20px;

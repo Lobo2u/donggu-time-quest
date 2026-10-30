@@ -1,5 +1,5 @@
 <script setup>
-// 하단 탭(코스·도감·내 기록) 화면 상단의 뒤로가기 — 어디서 왔든 항상 지도로.
+// 하단 탭(코스·도감·내 정보) 화면 상단의 뒤로가기 — 어디서 왔든 항상 지도로.
 import { useRouter } from 'vue-router'
 
 const router = useRouter()

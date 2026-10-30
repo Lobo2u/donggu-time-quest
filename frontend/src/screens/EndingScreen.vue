@@ -46,7 +46,7 @@ const guide = game.guide ?? 'majung'
     </div>
 
     <!-- CTA -->
-    <button class="btn-primary explore-btn" @click="router.push('/record')">
+    <button class="btn-primary explore-btn" @click="router.push('/profile')">
       <span class="msr" style="font-size:22px; color: var(--navy)">book</span>
       탐험 기록 보기
     </button>

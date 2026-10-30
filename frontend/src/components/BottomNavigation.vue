@@ -8,7 +8,7 @@ const tabs = [
   { label: '지도', icon: 'explore',      route: '/map',        matchPrefix: '/map' },
   { label: '코스', icon: 'route',        route: '/courses',    matchPrefix: '/courses' },
   { label: '도감', icon: 'auto_stories', route: '/collection', matchPrefix: '/collection' },
-  { label: '내 기록', icon: 'timeline',  route: '/record',     matchPrefix: '/record' },
+  { label: '내 정보', icon: 'person',    route: '/profile',    matchPrefix: '/profile' },
 ]
 
 function isActive(tab) {

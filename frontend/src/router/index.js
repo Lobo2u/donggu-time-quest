@@ -19,7 +19,7 @@ import BuddyMeetScreen  from '../screens/BuddyMeetScreen.vue'
 import CompleteScreen   from '../screens/CompleteScreen.vue'
 import CollectionScreen from '../screens/CollectionScreen.vue'
 import BuddyDetailScreen from '../screens/BuddyDetailScreen.vue'
-import RecordScreen     from '../screens/RecordScreen.vue'
+import ProfileScreen    from '../screens/ProfileScreen.vue'
 import EndingScreen     from '../screens/EndingScreen.vue'
 import GradeScreen      from '../screens/GradeScreen.vue'
 
@@ -34,7 +34,8 @@ export default createRouter({
     { path: '/complete',              component: CompleteScreen },
     { path: '/collection',            component: CollectionScreen },
     { path: '/buddy/:id',             component: BuddyDetailScreen },
-    { path: '/record',                component: RecordScreen },
+    { path: '/profile',               component: ProfileScreen },
+    { path: '/record',                redirect: '/profile' },
     { path: '/ending',                component: EndingScreen },
     { path: '/qrscan',               component: QrScanScreen },
     { path: '/awakening/:buddyId',   component: AwakeningScreen },
