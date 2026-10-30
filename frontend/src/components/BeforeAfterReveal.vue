@@ -40,15 +40,16 @@ function move(e) {
         <!-- 현재 (아래 전체) -->
         <div class="ba-layer">
           <SceneSvg :variant="variant" era="present" />
-          <span class="ba-tag present">현재</span>
         </div>
         <!-- 과거 (위, 슬라이더로 클립) -->
         <div class="ba-layer past-clip" :style="{ width: pos + '%' }">
           <div class="past-inner" ref="pastInner">
             <SceneSvg :variant="variant" era="past" />
           </div>
-          <span class="ba-tag past">1930년대 (재현)</span>
         </div>
+        <!-- 시대 표시: 잘리는 영역 밖에 고정해 글자가 좁은 폭에서 몰리지 않게, 가려지는 쪽은 흐리게 -->
+        <span class="ba-tag past" :style="{ opacity: pos > 22 ? 1 : 0.25 }">1930년대 (재현)</span>
+        <span class="ba-tag present" :style="{ opacity: pos < 82 ? 1 : 0.25 }">현재</span>
         <!-- 손잡이 -->
         <div class="ba-handle" :style="{ left: pos + '%' }"
           @mousedown.prevent="onDown" @touchstart.prevent="onDown">
@@ -82,7 +83,7 @@ function move(e) {
 .ba-layer { position: absolute; inset: 0; }
 .ba-layer.past-clip { overflow: hidden; border-right: 3px solid white; }
 .past-inner { position: absolute; top: 0; left: 0; height: 100%; aspect-ratio: 320/220; }
-.ba-tag { position: absolute; top: 8px; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 8px; color: white; }
+.ba-tag { position: absolute; top: 8px; z-index: 1; font-size: 10px; font-weight: 900; padding: 3px 8px; border-radius: 8px; color: white; white-space: nowrap; pointer-events: none; transition: opacity 0.15s; }
 .ba-tag.present { right: 8px; background: #0E9F9Acc; }
 .ba-tag.past { left: 8px; background: #6E5E42cc; }
 .ba-handle { position: absolute; top: 0; bottom: 0; width: 0; display: flex; align-items: center; justify-content: center; cursor: ew-resize; }

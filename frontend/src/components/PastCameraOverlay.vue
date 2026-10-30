@@ -1,9 +1,10 @@
 <script setup>
 // 카메라 위 옛 모습 겹치기 — byeol-night 'AR 뮤지컬'의 카메라 + 위치 맞추기 방식을 옮김.
-// 후면 카메라 영상 위에 장소의 과거 재현 일러스트를 반투명하게 겹치고,
+// 카메라 화면(목업: 장소의 현재 모습) 위에 과거 재현 일러스트를 반투명하게 겹치고,
 // '위치 맞추기'를 켜면 손가락으로 옮기기/크기 조절해 실제 건물에 맞춘다.
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import SceneSvg from './SceneSvg.vue'
+import CameraMock from './CameraMock.vue'
 import { useFit } from '../composables/useFit.js'
 
 const props = defineProps({
@@ -12,30 +13,16 @@ const props = defineProps({
 })
 const emit = defineEmits(['close'])
 
-const video = ref(null)
-const camError = ref('')
-let stream = null
 
 const opacity = ref(0.6)
 const aligning = ref(false)
 const fit = useFit(aligning)
 
-onMounted(async () => {
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-    video.value.srcObject = stream
-    await video.value.play().catch(() => {})
-  } catch (e) {
-    camError.value = e?.name === 'NotAllowedError' ? '카메라 권한이 필요해요' : '카메라를 켜지 못했어요'
-  }
-})
-onBeforeUnmount(() => { stream?.getTracks().forEach(t => t.stop()) })
 </script>
 
 <template>
   <div class="past-cam">
-    <video ref="video" class="cam-video" playsinline muted></video>
-    <div v-if="camError" class="cam-err">{{ camError }}</div>
+    <CameraMock :variant="variant" />
 
     <!-- 상단: 닫기 · 장소 · 위치 맞추기 -->
     <div class="pc-head">
@@ -69,12 +56,6 @@ onBeforeUnmount(() => { stream?.getTracks().forEach(t => t.stop()) })
 
 <style scoped>
 .past-cam { position: fixed; inset: 0; z-index: 1700; background: #1B2330; overflow: hidden; }
-.cam-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.cam-err {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  color: #C9D3DD; font-size: 14px; font-weight: 800;
-}
-
 .pc-head {
   position: absolute; left: 12px; right: 12px; top: 16px; z-index: 2;
   display: flex; align-items: center; gap: 8px;

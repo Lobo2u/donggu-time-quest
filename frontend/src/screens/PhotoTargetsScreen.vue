@@ -1,42 +1,33 @@
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { LOCATIONS, FIELD_QUESTS } from '../data/gameData.js'
-import { computeHash, hashToHex } from '../utils/imageHash.js'
 import { photoRefs, setRef, clearRef } from '../store/photoRefStore.js'
+import CameraMock from '../components/CameraMock.vue'
 
 const router = useRouter()
 const groups = Object.values(FIELD_QUESTS).map(q => ({ quest: q, loc: LOCATIONS[q.locationId] }))
 
+// 카메라(목업): 실제 촬영 대신 등록 표시만 남긴다
 const camOpen = ref(false)
-const camStatus = ref('idle')
 const activeTarget = ref(null)
-const videoEl = ref(null)
+const activeLocationId = ref('sojedom')
 const toast = ref(null)
-let stream = null
 
-async function openFor(target) {
+function openFor(target, locationId) {
   activeTarget.value = target
-  camOpen.value = true; camStatus.value = 'scanning'
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-    videoEl.value.srcObject = stream; await videoEl.value.play()
-  } catch (e) { camStatus.value = e.name === 'NotAllowedError' ? 'denied' : 'error' }
+  activeLocationId.value = locationId
+  camOpen.value = true
 }
 function capture() {
-  if (!videoEl.value || videoEl.value.readyState < 2) return
-  const hex = hashToHex(computeHash(videoEl.value))
-  setRef(activeTarget.value.code, hex)
-  toast.value = `${activeTarget.value.label} 기준 사진 등록 완료`
+  setRef(activeTarget.value.code, 'mockup')
+  toast.value = `${activeTarget.value.label} 기준 사진 등록 완료 (목업)`
   setTimeout(() => { toast.value = null }, 1600)
   close()
 }
 function close() {
   camOpen.value = false
-  if (stream) stream.getTracks().forEach(t => t.stop())
-  stream = null
 }
-onBeforeUnmount(close)
 
 const registeredCount = computed(() => Object.keys(photoRefs).length)
 </script>
@@ -69,7 +60,7 @@ const registeredCount = computed(() => Object.keys(photoRefs).length)
             <span class="pt-label">{{ t.label }}</span>
             <span class="pt-hint">{{ t.riddle }}</span>
           </div>
-          <button class="pt-cap" :class="{ done: photoRefs[t.code] }" @click="openFor(t)">
+          <button class="pt-cap" :class="{ done: photoRefs[t.code] }" @click="openFor(t, g.quest.locationId)">
             {{ photoRefs[t.code] ? '재촬영' : '기준 촬영' }}
           </button>
           <button v-if="photoRefs[t.code]" class="pt-clear" @click="clearRef(t.code)">
@@ -87,16 +78,12 @@ const registeredCount = computed(() => Object.keys(photoRefs).length)
           <span class="cam-title">{{ activeTarget?.label }} 기준 촬영</span>
           <button class="cam-close" @click="close"><span class="msr" style="font-size:24px; color:white">close</span></button>
         </div>
-        <div class="cam-view" v-if="camStatus === 'scanning'">
-          <video ref="videoEl" autoplay muted playsinline></video>
+        <div class="cam-view">
+          <CameraMock :variant="activeLocationId" />
           <div class="cam-frame"><div class="c tl"></div><div class="c tr"></div><div class="c bl"></div><div class="c br"></div></div>
           <p class="cam-hint">타깃을 화면 중앙에 꽉 차게 맞추고 촬영해요</p>
         </div>
-        <div class="cam-msg" v-else>
-          <span class="msr" style="font-size:48px; color:#9FC1C8">{{ camStatus === 'denied' ? 'no_photography' : 'photo_camera' }}</span>
-          <p>{{ camStatus === 'denied' ? '카메라 권한이 필요해요' : '카메라를 여는 중…' }}</p>
-        </div>
-        <button v-if="camStatus === 'scanning'" class="shutter" @click="capture">
+        <button class="shutter" @click="capture">
           <span class="msr" style="font-size:24px; color:var(--navy)">camera</span> 기준 사진으로 등록
         </button>
       </div>
@@ -132,7 +119,6 @@ const registeredCount = computed(() => Object.keys(photoRefs).length)
 .cam-title { font-size: 18px; font-weight: 900; color: white; }
 .cam-close { background: #FFFFFF18; border: none; border-radius: 10px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .cam-view { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 1; background: #000; }
-.cam-view video { width: 100%; height: 100%; object-fit: cover; }
 .cam-frame { position: absolute; inset: 0; pointer-events: none; }
 .cam-frame .c { position: absolute; width: 28px; height: 28px; border: 3px solid #7CE1D9; }
 .cam-frame .tl { top: 16px; left: 16px; border-right: 0; border-bottom: 0; }

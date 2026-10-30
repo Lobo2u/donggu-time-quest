@@ -75,10 +75,14 @@ watch(
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
-export function initPlayer(guide) {
-  game.guide = guide
+export function initPlayer() {
   game.initialized = true
   game.locations.sojedom.status = 'available'
+}
+
+// 첫 QR 인식 때 고른 탐험 동반자
+export function setGuide(guide) {
+  game.guide = guide
 }
 
 export function markArrived(locationId) {
@@ -192,6 +196,16 @@ export function resetGame() {
   const fresh = defaultState()
   Object.keys(fresh).forEach(k => { game[k] = fresh[k] })
   try { localStorage.removeItem(SAVE_KEY) } catch {}
+  initPlayer() // 시작 화면이 없으므로 초기화 후 바로 새 게임
+}
+
+// 시연 초기화: 탐험 진행만 지우고, 고른 동반자와 시작 안내 대화를 본 기록은 남김
+export function resetProgress() {
+  const keep = { guide: game.guide, demoMode: game.demoMode, seenStories: (game.seenStories ?? []).filter(id => id === 'intro') }
+  const fresh = defaultState()
+  Object.keys(fresh).forEach(k => { game[k] = fresh[k] })
+  Object.assign(game, keep)
+  initPlayer()
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

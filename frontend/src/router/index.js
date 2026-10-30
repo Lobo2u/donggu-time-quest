@@ -1,5 +1,4 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import WelcomeScreen     from '../screens/WelcomeScreen.vue'
 import QrScanScreen     from '../screens/QrScanScreen.vue'
 import AwakeningScreen  from '../screens/AwakeningScreen.vue'
 import ShareCardScreen  from '../screens/ShareCardScreen.vue'
@@ -26,7 +25,8 @@ import GradeScreen      from '../screens/GradeScreen.vue'
 export default createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/',                      component: WelcomeScreen },
+    // 시작 화면 없이 바로 지도로 (동반자는 첫 QR 인식 때 고름)
+    { path: '/',                      redirect: '/map' },
     { path: '/map',                   component: MapScreen },
     { path: '/location/:id',          component: LocationScreen },
     { path: '/minigame/:locationId',  component: MiniGameScreen },

@@ -157,6 +157,8 @@ async function share() {
   display: flex; flex-direction: column; gap: 14px;
   padding: 0 0 24px; overflow-y: auto;
 }
+/* 화면 높이에 맞춰 줄어들지 않고 스크롤되게 (QR·바코드가 잘리지 않도록) */
+.coupon-screen > * { flex-shrink: 0; }
 
 .coupon-header {
   display: flex; align-items: center; gap: 12px;

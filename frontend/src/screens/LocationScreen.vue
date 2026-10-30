@@ -1,11 +1,13 @@
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { game, markArrived, distanceTo } from '../store/gameStore.js'
+import { game, markArrived, distanceTo, setGuide } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
-import { react } from '../store/reactionStore.js'
-import { playStory } from '../store/storyStore.js'
+import { playStory, story } from '../store/storyStore.js'
 import ArrivalQr from '../components/ArrivalQr.vue'
+import GuidePicker from '../components/GuidePicker.vue'
+import MascotSvg from '../components/MascotSvg.vue'
+import CameraMock from '../components/CameraMock.vue'
 
 // 도착 확인 반경: 지도 근접 표시(arrivalRadius 300m)보다 좁게, 건물 앞에 있어야 QR 이 뜸.
 // GPS 오차는 최대 30m 까지만 봐줌 (byeol-night gpsCheck 와 같은 규칙)
@@ -74,17 +76,57 @@ async function checkIn(payload) {
   checking.value = false
 }
 
+// 흐름: QR 인식(scan) → 처음이면 동반자 고르기(pick) → 장소 스토리(story) → 미션 시작 / 스킵
+const phase = ref('scan')
+const storyEnded = ref(false)
+
 function confirmArrival() {
   markArrived(locationId)
-  // 처음 온 장소면 도착 스토리, 이미 봤으면 짧은 말풍선
-  if (!playStory(`arrive-${locationId}`)) react('arrive')
+  if (!game.guide) phase.value = 'pick'
+  else enterStory()
+}
+
+function onPick(guide) {
+  setGuide(guide)
+  playStory('intro')   // 고른 동반자의 첫 안내 대화 → 닫히면 스토리가 흐르기 시작
+  enterStory()
+}
+
+async function enterStory() {
+  phase.value = 'story'
+  storyEnded.value = false
+  await nextTick()
+  if (!story.open) { resumeAutoScroll(400); peek('start') }
+}
+// 안내 대화가 닫히면 그때 스토리 자동 스크롤 시작
+watch(() => story.open, (open) => {
+  if (!open && phase.value === 'story') { resumeAutoScroll(300); peek('start') }
+})
+
+// 동반자가 스토리 패널 위로 잠깐 올라와 알려 줌 (시작할 때 · 다 읽었을 때)
+const PEEK_LINES = {
+  start: { majung: { emote: 'aha', text: '이 장소의 이야기예요. 천천히 읽어 봐요!' },
+           jungang: { emote: 'humming', text: '여기 이야기 들어 볼래요? 끝까지 보면 미션이 열려요~' } },
+  end:   { majung: { emote: 'hype', text: '다 읽었네요! 미션 시작을 눌러요!' },
+           jungang: { emote: 'laugh', text: '좋아요! 이제 미션 시작!' } },
+}
+const peekLine = ref(null)
+const peeked = new Set()
+let peekTimer = null
+function peek(kind) {
+  if (peeked.has(kind)) return
+  peeked.add(kind)
+  peekLine.value = PEEK_LINES[kind][game.guide ?? 'majung']
+  clearTimeout(peekTimer)
+  peekTimer = setTimeout(() => { peekLine.value = null }, 3800)
+}
+watch(storyEnded, (ended) => { if (ended) peek('end') })
+
+function startMission() {
   router.push(`/minigame/${locationId}`)
 }
 
-// ── 카메라 도착 화면: 카메라 + 틀 안의 앱 안 QR + 자동으로 올라가는 스토리 ──
-const camVideo = ref(null)
-const camError = ref('')
-let camStream = null
+// ── 카메라 도착 화면: 카메라(목업) + 틀 안의 앱 안 QR + 자동으로 올라가는 스토리 ──
 
 const qrVisible = computed(() => game.demoMode || gpsState.value === 'near')
 const frameMsg = computed(() => ({
@@ -94,52 +136,63 @@ const frameMsg = computed(() => ({
   denied: '위치 권한이 필요해요',
 }[gpsState.value] ?? ''))
 
-async function startCamera() {
-  try {
-    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-    if (camVideo.value) {
-      camVideo.value.srcObject = camStream
-      await camVideo.value.play().catch(() => {})
-    }
-  } catch (e) {
-    camError.value = e?.name === 'NotAllowedError' ? '카메라 권한이 필요해요' : '카메라를 켜지 못했어요'
-  }
-}
 
-// 스토리: 한 번 천천히 올라가고 끝에서 멈춤. 손으로 만지면 자동 스크롤은 그만.
+// 스토리: 한 번 천천히 올라가고 끝에서 멈춤.
+// 손가락·마우스로 끌면 글을 직접 올리고 내릴 수 있고, 놓으면 그 자리에서 다시 흘러감.
 const storyEl = ref(null)
 let scrollRaf = null
 let scrollStart = null
-const SCROLL_SPEED = 22 // px/s
+let resumeTimer = null
+const SCROLL_SPEED = 60 // px/s
 function autoScroll(t) {
   const el = storyEl.value
   if (!el) return
   scrollStart ??= { t, top: el.scrollTop }
-  const target = scrollStart.top + ((t - scrollStart.t) / 1000) * SCROLL_SPEED
-  el.scrollTop = target
+  el.scrollTop = scrollStart.top + ((t - scrollStart.t) / 1000) * SCROLL_SPEED
   if (el.scrollTop + el.clientHeight < el.scrollHeight - 1) scrollRaf = requestAnimationFrame(autoScroll)
+  else storyEnded.value = true
 }
-function stopAutoScroll() { cancelAnimationFrame(scrollRaf); scrollRaf = null }
+// 손으로 끝까지 내려도 '미션 시작'이 나오게
+function onStoryScroll() {
+  const el = storyEl.value
+  if (el && el.scrollTop + el.clientHeight >= el.scrollHeight - 4) storyEnded.value = true
+}
+function stopAutoScroll() { cancelAnimationFrame(scrollRaf); scrollRaf = null; clearTimeout(resumeTimer) }
+function resumeAutoScroll(delay = 1200) {
+  stopAutoScroll()
+  resumeTimer = setTimeout(() => { scrollStart = null; scrollRaf = requestAnimationFrame(autoScroll) }, delay)
+}
+
+// 끌어서 스크롤 (터치·마우스 공통)
+let drag = null
+function onStoryDown(e) {
+  if (e.target.closest('button')) return // 안의 QR 스캔 버튼은 그대로 눌리게
+  stopAutoScroll()
+  drag = { y: e.clientY, top: storyEl.value.scrollTop }
+  e.currentTarget.setPointerCapture(e.pointerId)
+}
+function onStoryMove(e) {
+  if (!drag) return
+  storyEl.value.scrollTop = drag.top - (e.clientY - drag.y)
+}
+function onStoryUp() {
+  if (!drag) return
+  drag = null
+  resumeAutoScroll()
+}
+function onStoryWheel() { resumeAutoScroll() }
 
 onMounted(async () => {
   // 시연 모드가 아니고 이전에 GPS를 켠 적 없으면 자동 시도
   if (!game.demoMode) checkGPS()
-  if (alreadyComplete.value) return
-  startCamera()
-  await nextTick()
-  setTimeout(() => { scrollRaf = requestAnimationFrame(autoScroll) }, 900)
 })
-onBeforeUnmount(() => {
-  stopAutoScroll()
-  camStream?.getTracks().forEach(t => t.stop())
-})
+onBeforeUnmount(stopAutoScroll)
 </script>
 
 <template>
   <!-- 카메라 도착 화면 -->
   <div v-if="!alreadyComplete" class="screen cam-arrival">
-    <video ref="camVideo" class="ca-video" playsinline muted></video>
-    <div v-if="camError" class="ca-cam-err">{{ camError }}</div>
+    <CameraMock :variant="locationId" />
 
     <div class="ca-head">
       <button class="ca-back" aria-label="지도로" @click="$router.push('/map')">
@@ -152,19 +205,39 @@ onBeforeUnmount(() => {
     <!-- 네 모서리 틀: 건물 앞이면 앱 안 QR 이 이 안에 뜸 -->
     <div class="ca-frame">
       <i class="cn tl"></i><i class="cn tr"></i><i class="cn bl"></i><i class="cn br"></i>
-      <ArrivalQr v-if="qrVisible" :payload="loc.qrCode" :busy="checking" @press="checkIn" />
+      <div v-if="phase !== 'scan'" class="ca-done">
+        <span class="msr" style="font-size:40px; color:var(--orange)">check_circle</span>
+        <p>도착 확인 완료</p>
+      </div>
+      <ArrivalQr v-else-if="qrVisible" :payload="loc.qrCode" :place="loc.name" :busy="checking" @press="checkIn" />
       <p v-else class="ca-frame-msg">{{ frameMsg }}</p>
     </div>
     <p v-if="checkinError" class="ca-error">{{ checkinError }}</p>
-    <div v-if="!game.demoMode && (gpsState === 'far' || gpsState === 'denied')" class="ca-actions">
+    <div v-if="phase === 'scan' && !game.demoMode && (gpsState === 'far' || gpsState === 'denied')" class="ca-actions">
       <button v-if="gpsState === 'far'" class="ca-chip" @click="checkGPS">다시 확인</button>
       <button class="ca-chip solid" @click="game.demoMode = true">시연 모드로 진행</button>
     </div>
 
-    <!-- 스토리: 자동으로 천천히 올라감 -->
-    <div class="ca-story">
-      <span class="ca-story-label">스토리</span>
-      <div class="ca-story-scroll" ref="storyEl" @pointerdown="stopAutoScroll" @wheel="stopAutoScroll">
+    <!-- 첫 QR 인식: 동반자 고르기 -->
+    <GuidePicker v-if="phase === 'pick'" @pick="onPick" />
+
+    <!-- 스토리: QR 인식 후 아래에서 올라오고, 자동으로 천천히 흐름 -->
+    <Transition name="story-up">
+    <div v-if="phase === 'story'" class="ca-story">
+      <!-- 동반자가 패널 위로 잠깐 올라와 한마디 -->
+      <Transition name="peek">
+        <div v-if="peekLine" class="ca-peek" :key="peekLine.text">
+          <MascotSvg :character="game.guide ?? 'majung'" :mood="peekLine.emote" :size="78" />
+          <p class="ca-peek-bubble">{{ peekLine.text }}</p>
+        </div>
+      </Transition>
+      <div class="ca-story-head">
+        <span class="ca-story-label">스토리</span>
+        <button class="ca-skip" @click="startMission">스킵 ›</button>
+      </div>
+      <div class="ca-story-scroll" ref="storyEl"
+        @pointerdown="onStoryDown" @pointermove="onStoryMove" @pointerup="onStoryUp" @pointercancel="onStoryUp"
+        @wheel.passive="onStoryWheel" @scroll.passive="onStoryScroll">
         <div class="ca-spacer"></div>
         <p v-for="(line, i) in loc.storyContext" :key="i" class="ca-line">{{ line }}</p>
         <p class="ca-note">{{ loc.storyNote }}</p>
@@ -174,7 +247,14 @@ onBeforeUnmount(() => {
           가게 QR을 스캔하면 시간 친구가 강화돼요
         </button>
       </div>
+      <Transition name="fade">
+        <button v-if="storyEnded" class="ca-mission" @click="startMission">
+          <span class="msr" style="font-size:20px; color:var(--navy)">play_arrow</span>
+          미션 시작
+        </button>
+      </Transition>
     </div>
+    </Transition>
   </div>
 
   <div v-else class="screen location-screen">
@@ -334,11 +414,6 @@ onBeforeUnmount(() => {
 <style scoped>
 /* ── 카메라 도착 화면 ── */
 .cam-arrival { background: #1B2330; }
-.ca-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.ca-cam-err {
-  position: absolute; left: 0; right: 0; top: 40%; text-align: center;
-  color: #C9D3DD; font-size: 13px; font-weight: 800;
-}
 .ca-head {
   position: absolute; left: 0; right: 0; top: 0; z-index: 2;
   display: flex; align-items: center; gap: 8px; padding: 50px 16px 14px;
@@ -374,18 +449,49 @@ onBeforeUnmount(() => {
 .ca-chip.solid { background: var(--orange); border-color: var(--orange); color: var(--navy); }
 
 .ca-story {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 270px; z-index: 2;
+  position: absolute; left: 0; right: 0; bottom: 0; height: 320px; z-index: 2;
   background: #0B2A45F0; border-radius: 24px 24px 0 0; padding: 14px 20px 0;
   box-shadow: 0 -6px 20px #0005; display: flex; flex-direction: column;
 }
-.ca-story-label { font-size: 12px; font-weight: 900; color: var(--orange); letter-spacing: 1px; margin-bottom: 8px; }
+.ca-peek {
+  position: absolute; left: 14px; top: -96px; z-index: 3;
+  display: flex; align-items: flex-end; gap: 4px; pointer-events: none;
+}
+.ca-peek-bubble {
+  position: relative; max-width: 220px; margin-bottom: 34px;
+  background: var(--white); color: var(--ink); border: 2px solid var(--navy);
+  border-radius: 14px 14px 14px 4px; padding: 8px 12px;
+  font-size: 12.5px; font-weight: 800; line-height: 1.4; word-break: keep-all;
+  box-shadow: 0 4px 12px #0005;
+}
+.peek-enter-active { transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.25s; }
+.peek-leave-active { transition: transform 0.3s ease-in, opacity 0.3s; }
+.peek-enter-from, .peek-leave-to { transform: translateY(40px); opacity: 0; }
+
+.ca-story-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.ca-story-label { font-size: 12px; font-weight: 900; color: var(--orange); letter-spacing: 1px; }
+.ca-skip {
+  background: #FFFFFF1A; border: none; border-radius: 10px; padding: 5px 10px; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 800; color: #DCE6F0;
+}
+.ca-mission {
+  margin: 4px 0 16px; height: 50px; border: none; border-radius: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0;
+  background: var(--orange); color: var(--navy); font-family: var(--font); font-size: 16px; font-weight: 900;
+}
+.ca-done { display: flex; flex-direction: column; align-items: center; gap: 6px; color: white; font-size: 14px; font-weight: 900; text-shadow: 0 1px 4px #000a; }
+.story-up-enter-active { transition: transform 0.35s ease-out, opacity 0.35s; }
+.story-up-enter-from { transform: translateY(60px); opacity: 0; }
+.fade-enter-active { transition: opacity 0.3s; }
+.fade-enter-from { opacity: 0; }
 .ca-story-scroll {
   flex: 1; overflow-y: auto; scrollbar-width: none; padding-bottom: 24px;
+  touch-action: none; user-select: none; cursor: grab;
   -webkit-mask-image: linear-gradient(transparent 0, #000 18px, #000 calc(100% - 24px), transparent);
           mask-image: linear-gradient(transparent 0, #000 18px, #000 calc(100% - 24px), transparent);
 }
 .ca-story-scroll::-webkit-scrollbar { display: none; }
-.ca-spacer { height: 150px; }  /* 글이 패널 아래에서 올라오며 시작 */
+.ca-spacer { height: 70px; }  /* 글이 패널 아래에서 올라오며 시작 */
 .ca-line { font-size: 16px; font-weight: 700; color: white; line-height: 1.7; margin: 10px 0 14px; word-break: keep-all; }
 .ca-note { font-size: 11px; font-weight: 600; color: #9FB5CA; margin-bottom: 14px; }
 .ca-real { font-size: 12px; font-weight: 600; color: #C9D6E3; line-height: 1.6; word-break: keep-all; margin-bottom: 12px; }

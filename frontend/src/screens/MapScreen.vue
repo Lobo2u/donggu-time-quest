@@ -6,8 +6,7 @@ import 'leaflet/dist/leaflet.css'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
 import OnboardingTour from '../components/OnboardingTour.vue'
-import { playStory } from '../store/storyStore.js'
-import { game, resetGame, canClaimDaily, claimDaily } from '../store/gameStore.js'
+import { game, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import {
   geo, effectivePos, distanceMeters, bearing, bearingLabel, fmtDistance,
   startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo,
@@ -378,7 +377,6 @@ function recenter() {
   if (p && leafletMap) leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
 }
 function go(path) { menuOpen.value = false; router.push(path) }
-function doReset() { menuOpen.value = false; resetGame(); router.replace('/') }
 
 // ── 반응형 마커 업데이트 ──────────────────────────────────────────────────────
 watch(
@@ -402,12 +400,6 @@ function pickFromRadar(entry) {
 }
 
 // ── 라이프사이클 ──────────────────────────────────────────────────────────────
-// 첫 진입: 온보딩 투어(카드)를 마친 뒤 스토리 대화 시작
-const TOUR_KEY = 'dtq-onboarded'
-onMounted(() => {
-  try { if (localStorage.getItem(TOUR_KEY)) playStory('intro') } catch {}
-})
-
 onMounted(() => {
   initMap()
   startWatch()
@@ -435,7 +427,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="screen map-screen">
     <!-- 온보딩 튜토리얼 (최초 1회) -->
-    <OnboardingTour @done="playStory('intro')" />
+    <OnboardingTour />
 
     <!-- Leaflet 지도 컨테이너 -->
     <div ref="mapEl" class="leaflet-map-container" @click.self="selected = null"></div>
@@ -479,7 +471,6 @@ onBeforeUnmount(() => {
           <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
           <button class="menu-item" @click="go('/field-markers')"><span class="msr">qr_code_2</span> 타깃 팻말</button>
           <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
-          <button class="menu-item danger" @click="doReset"><span class="msr">refresh</span> 처음부터</button>
         </template>
       </div>
     </Transition>

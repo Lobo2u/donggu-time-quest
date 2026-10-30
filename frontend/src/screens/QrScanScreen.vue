@@ -1,62 +1,31 @@
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import jsQR from 'jsqr'
 import { game, checkInLocation } from '../store/gameStore.js'
 import { LOCATIONS } from '../data/gameData.js'
+import CameraMock from '../components/CameraMock.vue'
+import QrMockTarget from '../components/QrMockTarget.vue'
 
 const router = useRouter()
 const route  = useRoute()
 const fromLocationId = route.query.from
 
-const videoEl   = ref(null)
-const canvasEl  = ref(null)
-const status    = ref('init')  // init | scanning | success | error | denied | wrong
+const status    = ref('scanning')  // scanning | success | error | wrong
 const errorMsg  = ref('')
 const scannedLocation = ref(null)
-let stream = null
-let rafId  = null
+const fromLoc   = LOCATIONS[fromLocationId] ?? null
 
 // 시연용 수동 코드 입력
 const manualCode = ref('')
 const showManual = ref(false)
 
-async function startCamera() {
-  try {
-    status.value = 'scanning'
-    stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: 640, height: 480 },
-    })
-    videoEl.value.srcObject = stream
-    await videoEl.value.play()
-    scanLoop()
-  } catch (e) {
-    status.value = e.name === 'NotAllowedError' ? 'denied' : 'error'
-    errorMsg.value = e.message
-  }
-}
-
-function scanLoop() {
-  if (!videoEl.value || videoEl.value.readyState < 2) {
-    rafId = requestAnimationFrame(scanLoop)
-    return
-  }
-  const canvas = canvasEl.value
-  const ctx    = canvas.getContext('2d')
-  canvas.width  = videoEl.value.videoWidth
-  canvas.height = videoEl.value.videoHeight
-  ctx.drawImage(videoEl.value, 0, 0)
-  const img  = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  const code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' })
-  if (code) {
-    handleCode(code.data)
-    return
-  }
-  rafId = requestAnimationFrame(scanLoop)
+// 카메라(목업): 화면 속 매장 스탠드의 QR 을 눌러(또는 아래 버튼) 스캔
+const qrTargetRef = ref(null)
+function scanMock() {
+  qrTargetRef.value?.scan()
 }
 
 function handleCode(raw) {
-  stopCamera()
   const loc = Object.values(LOCATIONS).find(l => l.qrCode === raw)
   if (!loc) {
     status.value = 'wrong'
@@ -76,18 +45,9 @@ function tryManual() {
 }
 
 function retry() {
-  status.value = 'init'
+  status.value = 'scanning'
   errorMsg.value = ''
-  startCamera()
 }
-
-function stopCamera() {
-  if (rafId) cancelAnimationFrame(rafId)
-  if (stream) stream.getTracks().forEach(t => t.stop())
-}
-
-onMounted(startCamera)
-onBeforeUnmount(stopCamera)
 </script>
 
 <template>
@@ -103,36 +63,29 @@ onBeforeUnmount(stopCamera)
       </div>
     </div>
 
-    <!-- 카메라 뷰파인더 -->
+    <!-- 카메라 뷰파인더 (목업) -->
     <div class="viewfinder-wrap" v-if="status === 'scanning'">
-      <video ref="videoEl" class="camera-video" autoplay muted playsinline />
-      <canvas ref="canvasEl" style="display:none" />
+      <CameraMock :variant="fromLocationId ?? 'sojedom'" />
+      <div v-if="fromLoc" class="qr-stage">
+        <QrMockTarget ref="qrTargetRef" kind="store" :code="fromLoc.qrCode" :label="fromLoc.name" @scan="handleCode" />
+      </div>
       <div class="finder-frame">
         <div class="corner tl"></div><div class="corner tr"></div>
         <div class="corner bl"></div><div class="corner br"></div>
       </div>
       <div class="scan-line"></div>
-      <p class="scan-hint">가게에 붙은 QR 코드를 화면 안에 맞춰요</p>
+      <p class="scan-hint">매장 스탠드의 QR을 눌러 인식해요</p>
     </div>
-
-    <!-- 초기 상태 -->
-    <div class="status-card" v-else-if="status === 'init'">
-      <span class="msr" style="font-size:56px; color:var(--teal)">qr_code_scanner</span>
-      <p class="status-title">카메라를 열고 있어요</p>
-    </div>
+    <button v-if="status === 'scanning' && fromLoc" class="btn-primary scan-mock-btn" @click="scanMock">
+      <span class="msr" style="font-size:22px; color:var(--navy)">qr_code_scanner</span>
+      QR 인식하기
+    </button>
 
     <!-- 성공 -->
     <div class="status-card success" v-else-if="status === 'success'">
       <span class="msr" style="font-size:56px; color:var(--teal)">check_circle</span>
       <p class="status-title">{{ scannedLocation?.name }} 인증 완료!</p>
       <p class="status-sub">캐릭터 강화을 시작해요…</p>
-    </div>
-
-    <!-- 권한 거부 -->
-    <div class="status-card error" v-else-if="status === 'denied'">
-      <span class="msr" style="font-size:56px; color:var(--muted)">no_photography</span>
-      <p class="status-title">카메라 권한이 필요해요</p>
-      <p class="status-sub">브라우저 설정에서 카메라 권한을 허용하거나 아래 코드 직접 입력을 사용해요.</p>
     </div>
 
     <!-- 오류/잘못된 QR -->
@@ -207,7 +160,8 @@ onBeforeUnmount(stopCamera)
   border-radius: 24px; overflow: hidden;
   aspect-ratio: 1; background: #000;
 }
-.camera-video { width: 100%; height: 100%; object-fit: cover; }
+.scan-mock-btn { margin: 0 24px; width: auto; }
+.qr-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 
 .finder-frame {
   position: absolute; inset: 0; pointer-events: none;
@@ -222,6 +176,7 @@ onBeforeUnmount(stopCamera)
 .br { bottom: 16px; right: 16px;  border-width: 0 3px 3px 0; border-radius: 0 0 6px 0; }
 
 .scan-line {
+  pointer-events: none;
   position: absolute; left: 24px; right: 24px; height: 2px;
   background: var(--teal); box-shadow: 0 0 8px var(--teal);
   animation: scan 2s ease-in-out infinite;
