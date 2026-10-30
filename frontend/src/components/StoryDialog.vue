@@ -48,7 +48,7 @@ function advance() {
     <div class="story-layer" v-if="story.open && line" @click="advance">
       <div class="story-box">
         <div class="story-portrait">
-          <MascotSvg :character="line.who" :mood="line.emote" :size="92" />
+          <MascotSvg :character="line.who" :mood="line.emote" :size="112" />
         </div>
         <span class="story-name" :class="line.who">{{ MASCOTS[line.who]?.name }}</span>
         <button class="story-skip" @click.stop="closeStory">건너뛰기</button>
@@ -67,7 +67,7 @@ function advance() {
 <style scoped>
 .story-layer {
   position: fixed; inset: 0; z-index: 1000;
-  background: linear-gradient(to top, #0008 0%, #0003 40%, transparent 70%);
+  background: linear-gradient(to top, #000A 0%, #0008 35%, #0004 65%, transparent 90%);
   display: flex; align-items: flex-end; justify-content: center;
   padding: 0 12px calc(16px + env(safe-area-inset-bottom));
   cursor: pointer; user-select: none;
@@ -78,11 +78,11 @@ function advance() {
   padding: 30px 18px 30px; box-shadow: 0 8px 24px #0004;
 }
 .story-portrait {
-  position: absolute; left: 6px; top: -100px;
+  position: absolute; left: 4px; top: -124px;
   animation: pop-in 0.25s ease-out;
 }
 .story-name {
-  position: absolute; left: 100px; top: -15px;
+  position: absolute; left: 118px; top: -15px;
   padding: 4px 14px; border-radius: 12px;
   font-size: 13px; font-weight: 900; color: var(--white);
   background: #1F2D55;
