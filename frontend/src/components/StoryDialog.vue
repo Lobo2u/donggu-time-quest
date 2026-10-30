@@ -3,12 +3,19 @@
 // 대사는 한 글자씩 출력되고, 탭하면 (출력 중이면 전체 표시 →) 다음 대사로 넘어간다.
 import { computed, ref, watch, onBeforeUnmount } from 'vue'
 import { story, nextLine, closeStory } from '../store/storyStore.js'
-import { MASCOTS } from '../data/emotes.js'
+import { game } from '../store/gameStore.js'
+import { MASCOTS, pick } from '../data/emotes.js'
 import MascotSvg from './MascotSvg.vue'
 
 const TYPE_MS = 35
 
-const line = computed(() => story.lines[story.index])
+// 말하는 사람은 플레이어가 고른 동반자 한 명
+const line = computed(() => {
+  const raw = story.lines[story.index]
+  if (!raw) return null
+  const who = game.guide ?? 'majung'
+  return { who, emote: pick(raw.emote, who), text: pick(raw.text, who) }
+})
 const shown = ref('')
 const typing = computed(() => !!line.value && shown.value.length < line.value.text.length)
 
@@ -40,7 +47,7 @@ function advance() {
   <Transition name="story-fade">
     <div class="story-layer" v-if="story.open && line" @click="advance">
       <div class="story-box">
-        <div class="story-portrait" :key="line.who">
+        <div class="story-portrait">
           <MascotSvg :character="line.who" :mood="line.emote" :size="92" />
         </div>
         <span class="story-name" :class="line.who">{{ MASCOTS[line.who]?.name }}</span>

@@ -8,6 +8,7 @@ import MascotSvg from '../components/MascotSvg.vue'
 import { playStory } from '../store/storyStore.js'
 
 const router = useRouter()
+const guide = game.guide ?? 'majung'
 const reward = game.lastReward
 const buddy = reward ? BUDDIES[reward.buddyId] : null
 const locName = buddy ? Object.values(LOCATIONS).find(l => l.buddyId === reward?.buddyId)?.name : '알 수 없음'
@@ -36,10 +37,9 @@ onBeforeUnmount(() => { game.lastReward = null })
       <div class="shard-hex"></div>
     </div>
 
-    <!-- 주인공 마스코트 (시간 친구는 보상 목록에 작게) -->
+    <!-- 주인공: 고른 동반자 (시간 친구는 보상 목록에 작게) -->
     <div class="duo">
-      <MascotSvg character="majung" mood="hype" :size="112" />
-      <MascotSvg character="jungang" mood="laugh" :size="112" />
+      <MascotSvg :character="guide" :mood="guide === 'jungang' ? 'laugh' : 'hype'" :size="112" />
     </div>
 
     <!-- 보상 카드 -->

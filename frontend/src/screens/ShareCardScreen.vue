@@ -11,6 +11,7 @@ const route   = useRoute()
 const buddyId = route.params.buddyId
 const buddy   = BUDDIES[buddyId]
 const loc     = Object.values(LOCATIONS).find(l => l.buddyId === buddyId)
+const guide   = game.guide ?? 'majung'
 
 if (!buddy) router.replace('/map')
 
@@ -20,7 +21,7 @@ const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,
 const shared = ref(false)
 
 async function shareCard() {
-  const text = `대전 동구 TIME QUEST\n마중이·중앙이와 함께 ${loc?.name}의 기억을 되살렸어요! 🌟 (${buddy.name} 강화 완료)\n동구의 기억을 함께 되살리는 탐험을 시작해보세요.`
+  const text = `대전 동구 TIME QUEST\n${guide === 'jungang' ? '중앙이' : '마중이'}와 함께 ${loc?.name}의 기억을 되살렸어요! 🌟 (${buddy.name} 강화 완료)\n동구의 기억을 함께 되살리는 탐험을 시작해보세요.`
   if (navigator.share) {
     try {
       await navigator.share({ title: '동구 TIME QUEST - 강화 완료!', text })
@@ -59,11 +60,10 @@ async function shareCard() {
         현장 강화 완료
       </div>
 
-      <!-- 주인공 마스코트 -->
+      <!-- 주인공: 고른 동반자 -->
       <div class="card-buddy">
         <div class="card-glow"></div>
-        <MascotSvg character="majung" mood="hype" :size="120" />
-        <MascotSvg character="jungang" mood="laugh" :size="120" />
+        <MascotSvg :character="guide" :mood="guide === 'jungang' ? 'laugh' : 'hype'" :size="150" />
       </div>
 
       <!-- 장소 + 함께한 시간 친구(조연) -->

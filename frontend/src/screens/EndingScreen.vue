@@ -1,7 +1,9 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import { game } from '../store/gameStore.js'
 import MascotSvg from '../components/MascotSvg.vue'
 const router = useRouter()
+const guide = game.guide ?? 'majung'
 </script>
 
 <template>
@@ -35,15 +37,11 @@ const router = useRouter()
       <p class="story-attribution">이 이야기는 공식 역사 자료를 사용하지 않은 창작 서사입니다.</p>
     </div>
 
-    <!-- 주인공 마스코트 -->
+    <!-- 주인공: 고른 동반자 -->
     <div class="ending-chars">
       <div class="ending-char">
-        <p class="char-bubble">덕분에 동구의 하루가<br>다시 돌아왔어요!</p>
-        <MascotSvg character="majung" mood="hype" :size="116" />
-      </div>
-      <div class="ending-char">
-        <p class="char-bubble jungang">다음 코스에서<br>또 만나요~!</p>
-        <MascotSvg character="jungang" mood="laugh" :size="116" />
+        <p class="char-bubble" :class="guide">덕분에 동구의 하루가 다시 돌아왔어요!<br>다음 코스에서 또 만나요~</p>
+        <MascotSvg :character="guide" :mood="guide === 'jungang' ? 'laugh' : 'hype'" :size="124" />
       </div>
     </div>
 
