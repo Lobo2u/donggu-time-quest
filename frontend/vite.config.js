@@ -5,8 +5,13 @@ import { VitePWA } from 'vite-plugin-pwa'
 // GitHub Pages 서브경로 배포용 base (워크플로에서 BASE_PATH 주입)
 const base = process.env.BASE_PATH || '/'
 
+// 폰에서 HTTPS 로 열어 보기 위한 임시 터널 주소 허용 (cloudflared · pinggy · localtunnel)
+const tunnelHosts = ['.trycloudflare.com', '.pinggy.link', '.loca.lt']
+
 export default defineConfig({
   base,
+  server: { allowedHosts: tunnelHosts },
+  preview: { allowedHosts: tunnelHosts },
   plugins: [
     vue(),
     VitePWA({
