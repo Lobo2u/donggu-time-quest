@@ -2,8 +2,8 @@
 // 한 손가락 = 옮기기, 두 손가락 = 크기. enabled 가 false 면 손가락 입력을 무시.
 import { reactive, computed } from 'vue'
 
-export function useFit(enabled) {
-  const fit = reactive({ x: 0, y: 0, s: 1 })
+export function useFit(enabled, initial) {
+  const fit = reactive({ x: 0, y: 0, s: 1, ...(initial || {}) })
   const pts = new Map()
   let drag = null
 
@@ -29,6 +29,7 @@ export function useFit(enabled) {
   function up(e) { pts.delete(e.pointerId); drag = null }
 
   return {
+    state: fit, // { x, y, s } — 저장/복원용(관리자 저작 화면)
     style: computed(() => ({ transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.s})` })),
     handlers: { pointerdown: down, pointermove: move, pointerup: up, pointercancel: up },
   }
