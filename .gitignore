@@ -35,3 +35,6 @@ build/
 # 개발 중 로그 및 임시 파일
 *.log
 *.tmp
+
+# AR 스테이지 프로토타입 워크벤치 (리포 외부 작업물 — 앱 본체는 frontend/src/ar 에 이식됨)
+.ar-stage-work/

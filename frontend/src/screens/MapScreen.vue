@@ -471,6 +471,7 @@ onBeforeUnmount(() => {
           <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
           <button class="menu-item" @click="go('/field-markers')"><span class="msr">qr_code_2</span> 타깃 팻말</button>
           <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
+          <button class="menu-item" @click="go('/ar-building')"><span class="msr">view_in_ar</span> AR 건물 무대</button>
         </template>
       </div>
     </Transition>
