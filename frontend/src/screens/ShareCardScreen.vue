@@ -4,12 +4,14 @@ import { useRouter, useRoute } from 'vue-router'
 import { game } from '../store/gameStore.js'
 import { BUDDIES, LOCATIONS } from '../data/gameData.js'
 import BuddySvg from '../components/BuddySvg.vue'
+import MascotSvg from '../components/MascotSvg.vue'
 
 const router  = useRouter()
 const route   = useRoute()
 const buddyId = route.params.buddyId
 const buddy   = BUDDIES[buddyId]
 const loc     = Object.values(LOCATIONS).find(l => l.buddyId === buddyId)
+const guide   = game.guide ?? 'majung'
 
 if (!buddy) router.replace('/map')
 
@@ -19,7 +21,7 @@ const dateStr = `${today.getFullYear()}.${String(today.getMonth()+1).padStart(2,
 const shared = ref(false)
 
 async function shareCard() {
-  const text = `대전 동구 TIME QUEST\n나는 오늘 ${loc?.name}에서 ${buddy.name}을(를) 강화했어요! 🌟\n동구의 기억을 함께 되살리는 탐험을 시작해보세요.`
+  const text = `대전 동구 TIME QUEST\n${guide === 'jungang' ? '중앙이' : '마중이'}와 함께 ${loc?.name}의 기억을 되살렸어요! 🌟 (${buddy.name} 강화 완료)\n동구의 기억을 함께 되살리는 탐험을 시작해보세요.`
   if (navigator.share) {
     try {
       await navigator.share({ title: '동구 TIME QUEST - 강화 완료!', text })
@@ -58,16 +60,19 @@ async function shareCard() {
         현장 강화 완료
       </div>
 
-      <!-- 버디 SVG -->
+      <!-- 주인공: 고른 동반자 -->
       <div class="card-buddy">
         <div class="card-glow"></div>
-        <BuddySvg :variant="buddy.variant" mood="excited" :size="180" :awoken="true" />
+        <MascotSvg :character="guide" :mood="guide === 'jungang' ? 'laugh' : 'hype'" :size="150" />
       </div>
 
-      <!-- 버디 이름 -->
+      <!-- 장소 + 함께한 시간 친구(조연) -->
       <div class="card-buddy-info">
-        <h2 class="card-buddy-name">{{ buddy.name }}</h2>
-        <p class="card-buddy-sub">{{ buddy.awokenSubtitle }}</p>
+        <h2 class="card-buddy-name">{{ loc?.name }} 기억 복원</h2>
+        <p class="card-buddy-sub">
+          <BuddySvg :variant="buddy.variant" mood="happy" :size="22" :awoken="true" />
+          함께한 친구 {{ buddy.name }} · 강화 완료
+        </p>
       </div>
 
       <!-- 장소 인증 -->
@@ -124,7 +129,7 @@ async function shareCard() {
 
 /* ── 공유 카드 ── */
 .share-card {
-  background: linear-gradient(160deg, #062B48 0%, #0B5858 50%, #0E7B79 100%);
+  background: linear-gradient(160deg, #07243E 0%, #0F3558 50%, #1D4E7A 100%);
   border-radius: 28px; padding: 24px 20px 20px;
   display: flex; flex-direction: column; align-items: center; gap: 14px;
   position: relative; overflow: hidden;
@@ -151,7 +156,7 @@ async function shareCard() {
   font-size: 13px; font-weight: 900;
 }
 
-.card-buddy { position: relative; }
+.card-buddy { position: relative; display: flex; align-items: flex-end; gap: 16px; }
 .card-glow {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -166,7 +171,7 @@ async function shareCard() {
 
 .card-buddy-info { text-align: center; }
 .card-buddy-name { font-size: 28px; font-weight: 900; color: var(--white); }
-.card-buddy-sub  { font-size: 13px; font-weight: 700; color: #7CE1D9; margin-top: 3px; }
+.card-buddy-sub  { font-size: 13px; font-weight: 700; color: #BFD3E6; margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px; }
 
 .card-location {
   width: 100%; display: flex; align-items: center; gap: 10px;

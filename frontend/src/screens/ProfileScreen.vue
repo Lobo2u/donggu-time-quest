@@ -2,10 +2,17 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import BottomNavigation from '../components/BottomNavigation.vue'
-import { game, resetGame, courseProgress } from '../store/gameStore.js'
+import { game, resetGame, resetProgress, courseProgress } from '../store/gameStore.js'
 import { LOCATIONS, BUDDIES, COURSES } from '../data/gameData.js'
+import TabBackButton from '../components/TabBackButton.vue'
+import MascotSvg from '../components/MascotSvg.vue'
+import { MASCOTS } from '../data/emotes.js'
 
 const router = useRouter()
+
+// 내 정보: 동반자 · 닉네임 · 레벨 (아래에 내 기록이 이어짐)
+const guide = computed(() => game.guide ?? 'majung')
+const guideRole = computed(() => guide.value === 'jungang' ? '단서 해독' : '길 안내')
 
 const completedLocs = computed(() =>
   Object.values(LOCATIONS).filter(l => game.locations[l.id]?.status === 'complete')
@@ -18,10 +25,30 @@ const completedCourses = computed(() =>
 )
 const badges = computed(() => game.badges ?? [])
 
-function confirmReset() {
-  if (confirm('모든 진행 상황을 초기화할까요? 되돌릴 수 없어요.')) {
+// 초기화 버튼 두 개 — 지울 게 있을 때만 활성화 (없으면 회색)
+// 시연 초기화: 탐험 진행(장소·조각·경험치·동료·쿠폰 등)만 지움, 동반자·시작 안내는 유지
+const hasPlayProgress = computed(() =>
+  game.player.xp > 0 || game.player.shards > 0 || game.player.level > 1
+  || Object.values(game.locations).some(l => l.arrivedOnce || l.missionComplete || l.status === 'complete')
+  || Object.values(game.buddies).some(b => b.owned)
+  || Object.values(game.checkIns ?? {}).some(Boolean)
+  || Object.keys(game.coupons ?? {}).length > 0
+  || (game.badges?.length ?? 0) > 0
+  || (game.seenStories ?? []).some(id => id !== 'intro')
+)
+// 처음부터 다시 시작: 동반자 선택까지 모두 지움
+const hasAnything = computed(() => hasPlayProgress.value || !!game.guide || (game.seenStories?.length ?? 0) > 0)
+
+function confirmDemoReset() {
+  if (confirm('탐험 진행만 초기화할까요? 고른 동반자는 그대로 남아요.')) {
+    resetProgress()
+    router.replace('/map')
+  }
+}
+function confirmFullReset() {
+  if (confirm('모든 진행 상황을 처음부터 다시 시작할까요? 동반자 선택도 지워져요.')) {
     resetGame()
-    router.replace('/')
+    router.replace('/map')
   }
 }
 </script>
@@ -31,10 +58,29 @@ function confirmReset() {
     <div class="rec-scroll">
       <!-- 헤더 -->
       <div class="rec-head">
-        <p class="record-eyebrow">MY QUEST LOG</p>
-        <h1 class="record-title">내 탐험 기록</h1>
-        <p class="record-sub">{{ game.player.nickname }} 님의 탐험 기록이에요.</p>
+        <TabBackButton />
+        <p class="record-eyebrow">MY PAGE</p>
+        <h1 class="record-title">내 정보</h1>
       </div>
+
+      <!-- 프로필 -->
+      <div class="profile-card">
+        <div class="profile-guide">
+          <MascotSvg :character="guide" mood="idle" :size="64" :animated="false" />
+        </div>
+        <div class="profile-texts">
+          <!-- 이름: 로그인 등 실제 이름 연동 전까지 자리표시 -->
+          <p class="profile-name">OOO</p>
+          <p class="profile-meta">Lv.{{ game.player.level }} · 동반자 {{ MASCOTS[guide].name }} ({{ guideRole }})</p>
+          <button class="profile-link" @click="router.push('/grade')">
+            등급 혜택 보기
+            <span class="msr" style="font-size:16px">chevron_right</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 내 기록 -->
+      <p class="record-section-head">내 기록</p>
 
       <!-- 통계 -->
       <div class="stats-row">
@@ -133,11 +179,14 @@ function confirmReset() {
         </button>
       </div>
 
-      <!-- 시연 초기화 -->
-      <div class="reset-section">
-        <p class="reset-label">시연 초기화</p>
-        <button class="reset-btn" @click="confirmReset">
-          <span class="msr" style="font-size:16px">refresh</span>
+      <!-- 초기화: 지울 게 없으면 회색 비활성 -->
+      <div class="reset-row">
+        <button class="reset-btn" :disabled="!hasPlayProgress" @click="confirmDemoReset">
+          <span class="msr" style="font-size:18px">refresh</span>
+          시연 초기화
+        </button>
+        <button class="reset-btn full" :disabled="!hasAnything" @click="confirmFullReset">
+          <span class="msr" style="font-size:18px">restart_alt</span>
           처음부터 다시 시작
         </button>
       </div>
@@ -162,6 +211,24 @@ function confirmReset() {
 .record-eyebrow { font-size: 11px; font-weight: 900; color: var(--teal); letter-spacing: 1.4px; }
 .record-title { font-size: 26px; font-weight: 900; color: var(--ink); }
 .record-sub { font-size: 13px; font-weight: 600; color: var(--muted); word-break: keep-all; }
+
+.profile-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--navy); border-radius: 20px; padding: 14px 16px; box-shadow: var(--shadow);
+}
+.profile-guide {
+  width: 72px; height: 72px; border-radius: 50%; background: #FFFFFF14; flex-shrink: 0;
+  display: flex; align-items: flex-end; justify-content: center; overflow: hidden;
+}
+.profile-texts { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.profile-name { font-size: 18px; font-weight: 900; color: white; }
+.profile-meta { font-size: 12px; font-weight: 700; color: #BFD3E6; }
+.profile-link {
+  align-self: flex-start; display: flex; align-items: center; gap: 2px; margin-top: 4px;
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 900; color: var(--orange);
+}
+.record-section-head { font-size: 17px; font-weight: 900; color: var(--ink); margin-top: 4px; }
 
 .stats-row {
   background: var(--sky); border-radius: 20px;
@@ -210,16 +277,17 @@ function confirmReset() {
   padding: 32px; text-align: center; font-size: 14px; font-weight: 700; color: var(--muted);
 }
 
-.reset-section {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-top: 8px; padding-top: 14px; border-top: 1px solid #EEF3F3;
-}
-.reset-label { font-size: 12px; font-weight: 800; color: var(--muted); }
+.reset-row { display: flex; gap: 8px; margin-top: 8px; }
 .reset-btn {
-  display: flex; align-items: center; gap: 6px;
-  background: none; border: 1px solid #D4DEDE; border-radius: 12px;
-  padding: 8px 14px; font-family: var(--font); font-size: 12px; font-weight: 800;
-  color: var(--muted); cursor: pointer;
+  flex: 1; height: 48px; min-width: 0;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  background: var(--white); border: 2px solid #D64B5F; border-radius: 14px;
+  font-family: var(--font); font-size: 14px; font-weight: 900;
+  color: #D64B5F; cursor: pointer;
+}
+.reset-btn.full { background: #D64B5F; color: white; }
+.reset-btn:disabled, .reset-btn.full:disabled {
+  background: #F0F0F0; border-color: #E0E0E0; color: #B5B5B5; cursor: not-allowed;
 }
 
 .nav-wrap { position: absolute; left: 16px; bottom: 10px; z-index: 20; }

@@ -1,0 +1,153 @@
+{
+  "image": "mascot-sheet.png",
+  "size": {
+    "w": 1680,
+    "h": 560
+  },
+  "frame": {
+    "w": 240,
+    "h": 280
+  },
+  "frames": [
+    {
+      "name": "majung-idle",
+      "character": "majung",
+      "emote": "idle",
+      "label": "기본",
+      "x": 0,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "majung-blank",
+      "character": "majung",
+      "emote": "blank",
+      "label": "멍…",
+      "x": 240,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "majung-angry",
+      "character": "majung",
+      "emote": "angry",
+      "label": "화남",
+      "x": 480,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "majung-sigh",
+      "character": "majung",
+      "emote": "sigh",
+      "label": "한숨",
+      "x": 720,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "majung-confused",
+      "character": "majung",
+      "emote": "confused",
+      "label": "갸우뚱",
+      "x": 960,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "majung-hype",
+      "character": "majung",
+      "emote": "hype",
+      "label": "신남",
+      "x": 1200,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "majung-aha",
+      "character": "majung",
+      "emote": "aha",
+      "label": "아하!",
+      "x": 1440,
+      "y": 0,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-idle",
+      "character": "jungang",
+      "emote": "idle",
+      "label": "기본",
+      "x": 0,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-curious",
+      "character": "jungang",
+      "emote": "curious",
+      "label": "갸우뚱",
+      "x": 240,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-surprised",
+      "character": "jungang",
+      "emote": "surprised",
+      "label": "깜짝!",
+      "x": 480,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-sigh",
+      "character": "jungang",
+      "emote": "sigh",
+      "label": "한숨",
+      "x": 720,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-blank",
+      "character": "jungang",
+      "emote": "blank",
+      "label": "멍…",
+      "x": 960,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-laugh",
+      "character": "jungang",
+      "emote": "laugh",
+      "label": "폭소",
+      "x": 1200,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    },
+    {
+      "name": "jungang-humming",
+      "character": "jungang",
+      "emote": "humming",
+      "label": "콧노래",
+      "x": 1440,
+      "y": 280,
+      "w": 240,
+      "h": 280
+    }
+  ]
+}

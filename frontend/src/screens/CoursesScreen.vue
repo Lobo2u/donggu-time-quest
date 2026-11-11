@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import { game, courseProgress, canClaimCourse, claimCourseReward, playerScore, leaderboard } from '../store/gameStore.js'
 import { COURSES, LOCATIONS } from '../data/gameData.js'
+import TabBackButton from '../components/TabBackButton.vue'
 
 const router = useRouter()
 const courseList = Object.values(COURSES)
@@ -33,6 +34,7 @@ const myScore = computed(() => playerScore())
   <div class="screen courses-screen">
     <!-- 헤더 -->
     <div class="co-header">
+      <TabBackButton />
       <p class="co-eyebrow">MISSION TOUR</p>
       <h1 class="co-title">미션투어 코스</h1>
       <p class="co-sub">동구를 테마별로 걷고, 스탬프를 모아 완주 인증을 받아요.</p>

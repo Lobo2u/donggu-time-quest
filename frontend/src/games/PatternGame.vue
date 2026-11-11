@@ -2,6 +2,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { abilityPower } from '../store/gameStore.js'
+import { react } from '../store/reactionStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
@@ -73,6 +74,7 @@ function checkPattern() {
     correctCells.value = [...playerPattern.value]
     phase.value = 'feedback'
     roundsWon.value++
+    if (roundsWon.value < rounds) react('correct', 1200)
     setTimeout(() => {
       if (roundsWon.value >= rounds) {
         emit('win')
@@ -84,6 +86,7 @@ function checkPattern() {
   } else {
     wrongCells.value = playerPattern.value.filter(c => !correctPattern.value.includes(c))
     phase.value = 'feedback'
+    react('wrong')
     setTimeout(() => {
       wrongCells.value = []
       playerPattern.value = []

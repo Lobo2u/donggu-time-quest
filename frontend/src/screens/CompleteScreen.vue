@@ -1,11 +1,14 @@
 <script setup>
-import { computed, onBeforeUnmount } from 'vue'
+import { computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { game } from '../store/gameStore.js'
 import { BUDDIES, LOCATIONS } from '../data/gameData.js'
 import BuddySvg from '../components/BuddySvg.vue'
+import MascotSvg from '../components/MascotSvg.vue'
+import { playStory } from '../store/storyStore.js'
 
 const router = useRouter()
+const guide = game.guide ?? 'majung'
 const reward = game.lastReward
 const buddy = reward ? BUDDIES[reward.buddyId] : null
 const locName = buddy ? Object.values(LOCATIONS).find(l => l.buddyId === reward?.buddyId)?.name : '알 수 없음'
@@ -13,6 +16,9 @@ const locName = buddy ? Object.values(LOCATIONS).find(l => l.buddyId === reward?
 const nextAvailable = computed(() =>
   Object.values(LOCATIONS).find(l => game.locations[l.id]?.status === 'available')
 )
+
+// 첫 미션 완료 시 보상 안내
+onMounted(() => { if (reward) playStory('first-win') })
 
 // 이 화면을 떠날 때 보상 데이터 초기화 (중복 표시 방지)
 onBeforeUnmount(() => { game.lastReward = null })
@@ -31,9 +37,9 @@ onBeforeUnmount(() => { game.lastReward = null })
       <div class="shard-hex"></div>
     </div>
 
-    <!-- 획득 친구 -->
-    <div v-if="buddy" class="buddy-area">
-      <BuddySvg :variant="buddy.variant" mood="excited" :size="130" />
+    <!-- 주인공: 고른 동반자 (시간 친구는 보상 목록에 작게) -->
+    <div class="duo">
+      <MascotSvg :character="guide" :mood="guide === 'jungang' ? 'laugh' : 'hype'" :size="112" />
     </div>
 
     <!-- 보상 카드 -->
@@ -41,7 +47,8 @@ onBeforeUnmount(() => { game.lastReward = null })
       <h3 class="reward-place">지도에 '{{ locName }}' 이름이 다시 나타났다</h3>
       <div class="reward-rows">
         <div class="reward-item">
-          <span class="msr" style="font-size:22px; color:var(--orange)">auto_stories</span>
+          <BuddySvg v-if="buddy" :variant="buddy.variant" mood="happy" :size="24" />
+          <span v-else class="msr" style="font-size:22px; color:var(--orange)">auto_stories</span>
           <div class="reward-texts">
             <span class="reward-label">새로운 동료</span>
             <span class="reward-value">{{ buddy?.name ?? '???' }}</span>
@@ -92,7 +99,7 @@ onBeforeUnmount(() => { game.lastReward = null })
 
 <style scoped>
 .complete-screen {
-  background: linear-gradient(180deg, #062B48 0%, #087D79 58%, #E7FFF9 100%);
+  background: linear-gradient(180deg, #07243E 0%, #1D4E7A 58%, #F3F1EA 100%);
   overflow: hidden;
 }
 
@@ -123,15 +130,15 @@ onBeforeUnmount(() => { game.lastReward = null })
 }
 
 .shard-wrap {
-  position: absolute; left: 50%; top: 148px;
+  position: absolute; left: 50%; top: 150px;
   transform: translateX(-50%);
-  width: 130px; height: 130px;
+  width: 100px; height: 100px;
   background: #FFFFFF18; border: 2px solid #FFFFFF55;
-  border-radius: 65px; box-shadow: 0 0 34px #FF9F1C77;
+  border-radius: 50px; box-shadow: 0 0 34px #FF9F1C77;
   display: flex; align-items: center; justify-content: center;
 }
 .shard-hex {
-  width: 66px; height: 82px;
+  width: 50px; height: 62px;
   background: linear-gradient(155deg, #FFE19A 0%, #FF9F1C 60%, #E66D00 100%);
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   animation: float-hex 2s ease-in-out infinite alternate;
@@ -141,13 +148,13 @@ onBeforeUnmount(() => { game.lastReward = null })
   to   { transform: scale(1.05); }
 }
 
-.buddy-area {
-  position: absolute; left: 50%; top: 288px;
-  transform: translateX(-50%);
+.duo {
+  position: absolute; left: 0; right: 0; top: 268px;
+  display: flex; justify-content: center; align-items: flex-end; gap: 28px;
 }
 
 .reward-card {
-  position: absolute; left: 24px; top: 474px; width: 342px;
+  position: absolute; left: 24px; top: 414px; width: 342px;
   background: #FFFFFFF2; border-radius: 24px; padding: 18px;
   display: flex; flex-direction: column; gap: 12px;
 }
@@ -165,14 +172,14 @@ onBeforeUnmount(() => { game.lastReward = null })
 }
 
 .next-mission {
-  position: absolute; left: 24px; top: 660px; width: 342px;
+  position: absolute; left: 24px; top: 600px; width: 342px;
   background: #DDF4F1; border-radius: 18px;
   display: flex; align-items: center; gap: 10px; padding: 10px 14px;
   font-size: 13px; font-weight: 800; color: var(--ink); word-break: keep-all;
 }
 
-.cta-btn { position: absolute; left: 24px; top: 724px; }
-.cta-btn-2 { position: absolute; left: 24px; top: 788px; background: white; color: var(--teal-dark); }
+.cta-btn { position: absolute; left: 24px; top: 662px; }
+.cta-btn-2 { position: absolute; left: 24px; top: 726px; background: white; color: var(--navy); }
 
 .replay-note {
   position: absolute; left: 24px; right: 24px; bottom: 8px;

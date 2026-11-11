@@ -4,6 +4,7 @@ import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
 import { game } from '../store/gameStore.js'
 import { BUDDIES, LOCATIONS } from '../data/gameData.js'
+import TabBackButton from '../components/TabBackButton.vue'
 
 const router = useRouter()
 
@@ -23,6 +24,7 @@ const totalCount = buddyList.length
 <template>
   <div class="screen collection-screen">
     <div class="col-header">
+      <TabBackButton />
       <p class="col-eyebrow">TIME ARCHIVE</p>
       <h1 class="col-title">기억 조각 도감</h1>
       <p class="col-count">{{ ownedCount }} / {{ totalCount }} 동료를 만났어요</p>

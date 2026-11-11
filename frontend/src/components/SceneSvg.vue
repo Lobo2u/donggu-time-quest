@@ -4,6 +4,7 @@ import { computed } from 'vue'
 const props = defineProps({
   variant: { type: String, default: 'sojedom' },
   era: { type: String, default: 'present' },
+  fit: { type: String, default: 'meet' }, // meet | slice (화면을 꽉 채울 때)
 })
 const past = computed(() => props.era === 'past')
 
@@ -19,7 +20,8 @@ const roof = computed(() => {
 </script>
 
 <template>
-  <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" class="scene" :class="{ past }">
+  <svg viewBox="0 0 320 220" xmlns="http://www.w3.org/2000/svg" class="scene" :class="{ past }"
+    :preserveAspectRatio="fit === 'slice' ? 'xMidYMid slice' : 'xMidYMid meet'">
     <!-- 하늘 -->
     <rect width="320" height="150" :fill="sky" />
     <!-- 해/구름 -->

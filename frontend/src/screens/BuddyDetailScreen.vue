@@ -138,7 +138,7 @@ function replay() {
 .buddy-showcase {
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: 24px 16px 20px; position: relative;
-  background: linear-gradient(180deg, #DFF7F4 0%, var(--paper) 100%);
+  background: linear-gradient(180deg, #E3EBF3 0%, var(--paper) 100%);
 }
 .showcase-bg {
   position: absolute; inset: 0;

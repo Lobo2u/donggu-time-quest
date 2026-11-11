@@ -1,7 +1,9 @@
 <script setup>
 import { useRouter } from 'vue-router'
-import BuddySvg from '../components/BuddySvg.vue'
+import { game } from '../store/gameStore.js'
+import MascotSvg from '../components/MascotSvg.vue'
 const router = useRouter()
+const guide = game.guide ?? 'majung'
 </script>
 
 <template>
@@ -35,17 +37,16 @@ const router = useRouter()
       <p class="story-attribution">이 이야기는 공식 역사 자료를 사용하지 않은 창작 서사입니다.</p>
     </div>
 
-    <!-- Characters -->
+    <!-- 주인공: 고른 동반자 -->
     <div class="ending-chars">
-      <div class="ending-char-majung"><BuddySvg variant="majung" mood="happy" :size="76" /></div>
-      <div class="ending-char-jungang"><BuddySvg variant="jungang" mood="happy" :size="76" /></div>
+      <div class="ending-char">
+        <p class="char-bubble" :class="guide">덕분에 동구의 하루가 다시 돌아왔어요!<br>다음 코스에서 또 만나요~</p>
+        <MascotSvg :character="guide" :mood="guide === 'jungang' ? 'laugh' : 'hype'" :size="124" />
+      </div>
     </div>
 
-    <!-- Character note -->
-    <p class="char-note">마중이: "목적지 이동이 어려울 때를 위한 다음 출발 아이콘을 확인해."<br>중앙이: "탐험 기록에서 완료된 장면을 다시 볼 수 있어!"</p>
-
     <!-- CTA -->
-    <button class="btn-primary explore-btn" @click="router.push('/record')">
+    <button class="btn-primary explore-btn" @click="router.push('/profile')">
       <span class="msr" style="font-size:22px; color: var(--navy)">book</span>
       탐험 기록 보기
     </button>
@@ -60,7 +61,7 @@ const router = useRouter()
 
 <style scoped>
 .ending-screen {
-  background: linear-gradient(180deg, #E8FFFB 0%, #C5EDE8 60%, #8FCECA 100%);
+  background: linear-gradient(180deg, #F7F5EF 0%, #ECE8DD 60%, #D9D1BC 100%);
   overflow: hidden;
 }
 
@@ -87,7 +88,7 @@ const router = useRouter()
 .map-scene {
   position: absolute;
   left: 20px; top: 142px;
-  width: 350px; height: 282px;
+  width: 350px; height: 190px;
   border-radius: 22px;
   overflow: hidden;
   box-shadow: 0 6px 20px #08233F22;
@@ -136,7 +137,7 @@ const router = useRouter()
 
 .story-card {
   position: absolute;
-  left: 20px; top: 446px;
+  left: 20px; top: 346px;
   width: 350px;
   background: #FFFFFFF0;
   border-radius: 22px;
@@ -169,33 +170,31 @@ const router = useRouter()
 
 .ending-chars {
   position: absolute;
-  left: 20px; top: 614px;
+  left: 20px; top: 500px;
   width: 350px;
-  height: 92px;
   display: flex;
-  gap: 12px;
-  align-items: center;
+  gap: 18px;
+  align-items: flex-end;
   justify-content: center;
 }
 
-.ending-char-majung,
-.ending-char-jungang {
-  width: 80px; height: 92px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.ending-char {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
 }
 
-.char-note {
-  position: absolute;
-  left: 20px; top: 712px;
-  width: 350px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--teal-dark);
-  line-height: 1.5;
-  word-break: keep-all;
+.char-bubble {
+  position: relative;
+  background: var(--white); border: 2px solid var(--navy); border-radius: 14px;
+  padding: 7px 10px; text-align: center;
+  font-size: 12px; font-weight: 800; color: var(--ink); line-height: 1.4; word-break: keep-all;
 }
+.char-bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -7px; transform: translateX(-50%) rotate(45deg);
+  width: 10px; height: 10px; background: var(--white);
+  border-right: 2px solid var(--navy); border-bottom: 2px solid var(--navy);
+}
+.char-bubble.jungang { border-color: #E8463C; }
+.char-bubble.jungang::after { border-color: #E8463C; }
 
 .explore-btn {
   position: absolute;

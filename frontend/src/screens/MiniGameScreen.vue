@@ -10,6 +10,7 @@ import OrderGame      from '../games/OrderGame.vue'
 import PatternGame    from '../games/PatternGame.vue'
 import TimelineGame   from '../games/TimelineGame.vue'
 import FieldQuestGame from '../games/FieldQuestGame.vue'
+import { react } from '../store/reactionStore.js'
 
 const router = useRouter()
 const route  = useRoute()
@@ -38,6 +39,7 @@ const replayXp = ref(0)
 
 function onWin() {
   won.value = true
+  react('win')
   if (isReplay.value) {
     const r = replayReward(loc.buddyId)
     replayXp.value = r.xp

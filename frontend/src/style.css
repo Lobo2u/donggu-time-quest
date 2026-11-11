@@ -1,15 +1,17 @@
 :root {
-  --navy:        #3E5408;   /* 진한 올리브 (기존 네이비 자리) */
+  --navy:        #0B2A45;   /* 딥 네이비 (지도 화면 목표 카드·하단 탭과 같은 톤) */
+  --navy-deep:   #07243E;
+  --shadow:      0 5px 18px #062B4033;   /* 지도 위 떠 있는 패널 그림자 */
   --teal:        #8DB02A;   /* 라임 (주요 강조) */
   --teal-dark:   #4F6B0A;   /* 올리브 */
   --orange:      #FF9F1C;
   --orange-soft: #FFF1D6;
-  --sky:         #F6F9E8;   /* 연한 라임 카드 배경 */
-  --paper:       #FAFBF5;
+  --sky:         #EDF1F5;   /* 연한 네이비 틴트 카드 배경 */
+  --paper:       #F3F1EA;   /* 지도 타일 같은 베이지 */
   --white:       #FFFFFF;
   --muted:       #6B6B6B;
   --ink:         #222222;
-  --lime:        #A5BF2A;   /* 헤더 · 브랜드 */
+  --lime:        #0B2A45;   /* 헤더 · 브랜드 (네이비로 통일) */
   --blue:        #4A5FE7;   /* 주요 CTA */
   --locked:      #F0F0F0;   /* 잠김 · 비활성 */
   --locked-ink:  #8A8A8A;
@@ -39,6 +41,25 @@ html, body {
   min-height: 100vh;
   padding: 16px 0;
   background: #101820;
+}
+
+.frame-box { position: relative; flex-shrink: 0; }
+.phone-frame {
+  position: absolute;
+  left: 0; top: 0;
+  width: 390px;
+  height: 844px;
+  border-radius: 40px;
+  overflow: hidden;
+  transform-origin: 0 0;
+  transform: scale(1); /* transform 이 있어야 fixed 자식의 기준이 이 틀이 됨 */
+}
+/* 폰 · 홈 화면 앱: 틀 없이 꽉 채움 */
+.frame-box.full .phone-frame,
+.frame-box.full .screen { border-radius: 0; box-shadow: none; }
+@media (max-width: 600px), (display-mode: standalone) {
+  html, body, #app { height: 100%; overflow: hidden; }
+  #app { min-height: 0; padding: 0; align-items: center; background: #08233F; }
 }
 
 .screen {
@@ -107,7 +128,9 @@ html, body {
   background: white; border: 3px solid #4A90D9;
   display: flex; align-items: center; justify-content: center;
   font-size: 22px; box-shadow: 0 2px 8px #00000055; z-index: 2;
+  overflow: hidden;
 }
+.lf-user-avatar img { width: 38px; height: 44px; margin-top: 6px; object-fit: contain; }
 .lf-user-pulse {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -168,6 +191,8 @@ html, body {
   justify-content: center;
   gap: 10px;
   width: 342px;
+  max-width: 100%;
+  min-width: 0;
   height: 56px;
   background: var(--orange);
   color: var(--navy);
@@ -186,10 +211,12 @@ html, body {
   justify-content: center;
   gap: 10px;
   width: 342px;
+  max-width: 100%;
+  min-width: 0;
   height: 56px;
   background: #FFFFFFE8;
-  color: var(--teal-dark);
-  border: 2px solid var(--teal);
+  color: var(--navy);
+  border: 2px solid #0B2A4533;
   border-radius: 18px;
   font-family: var(--font);
   font-size: 17px;

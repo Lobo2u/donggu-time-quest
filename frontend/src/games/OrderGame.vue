@@ -2,6 +2,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { abilityPower } from '../store/gameStore.js'
+import { react } from '../store/reactionStore.js'
 
 const props = defineProps({ mission: Object })
 const emit = defineEmits(['win'])
@@ -76,6 +77,7 @@ function checkResult() {
     emit('win')
   } else {
     wrongFeedback.value = true
+    react('wrong')
     setTimeout(() => {
       wrongFeedback.value = false
       playerSequence.value = []

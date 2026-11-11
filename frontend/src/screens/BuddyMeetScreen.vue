@@ -57,7 +57,7 @@ function selectChoice(choice, choiceIndex) {
       }
     }, 1200)
   } else {
-    buddyMood.value = 'shy'
+    buddyMood.value = 'sad'
     wrongChoice.value = choice.hint
 
     setTimeout(() => {
@@ -245,7 +245,7 @@ function goReward() {
 
 <style scoped>
 .meet-screen {
-  background: linear-gradient(180deg, #062B48 0%, #087D79 70%, #E7FFF9 100%);
+  background: linear-gradient(180deg, #07243E 0%, #1D4E7A 70%, #F3F1EA 100%);
   overflow-y: auto;
 }
 

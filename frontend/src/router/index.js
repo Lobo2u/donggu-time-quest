@@ -1,5 +1,4 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import WelcomeScreen     from '../screens/WelcomeScreen.vue'
 import QrScanScreen     from '../screens/QrScanScreen.vue'
 import AwakeningScreen  from '../screens/AwakeningScreen.vue'
 import ShareCardScreen  from '../screens/ShareCardScreen.vue'
@@ -19,14 +18,15 @@ import BuddyMeetScreen  from '../screens/BuddyMeetScreen.vue'
 import CompleteScreen   from '../screens/CompleteScreen.vue'
 import CollectionScreen from '../screens/CollectionScreen.vue'
 import BuddyDetailScreen from '../screens/BuddyDetailScreen.vue'
-import RecordScreen     from '../screens/RecordScreen.vue'
+import ProfileScreen    from '../screens/ProfileScreen.vue'
 import EndingScreen     from '../screens/EndingScreen.vue'
 import GradeScreen      from '../screens/GradeScreen.vue'
 
 export default createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/',                      component: WelcomeScreen },
+    // 시작 화면 없이 바로 지도로 (동반자는 첫 QR 인식 때 고름)
+    { path: '/',                      redirect: '/map' },
     { path: '/map',                   component: MapScreen },
     { path: '/location/:id',          component: LocationScreen },
     { path: '/minigame/:locationId',  component: MiniGameScreen },
@@ -34,7 +34,8 @@ export default createRouter({
     { path: '/complete',              component: CompleteScreen },
     { path: '/collection',            component: CollectionScreen },
     { path: '/buddy/:id',             component: BuddyDetailScreen },
-    { path: '/record',                component: RecordScreen },
+    { path: '/profile',               component: ProfileScreen },
+    { path: '/record',                redirect: '/profile' },
     { path: '/ending',                component: EndingScreen },
     { path: '/qrscan',               component: QrScanScreen },
     { path: '/awakening/:buddyId',   component: AwakeningScreen },

@@ -1,26 +1,21 @@
 <svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#0B3A5C"/>
-      <stop offset="1" stop-color="#08233F"/>
-    </linearGradient>
-    <linearGradient id="shard" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#FFE19A"/>
-      <stop offset="0.6" stop-color="#FF9F1C"/>
-      <stop offset="1" stop-color="#E66D00"/>
-    </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#7CE1D9" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#7CE1D9" stop-opacity="0"/>
-    </radialGradient>
-  </defs>
-  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <circle cx="256" cy="248" r="170" fill="url(#glow)"/>
-  <!-- 시간 조각 육각형 -->
-  <polygon points="256,96 392,176 392,320 256,400 120,320 120,176"
-    fill="url(#shard)" stroke="#FFF4D6" stroke-width="10" stroke-linejoin="round"/>
-  <!-- 중앙 하이라이트 -->
-  <polygon points="256,150 300,176 256,202 212,176" fill="#FFFFFF" opacity="0.4"/>
-  <!-- 동구 이니셜 -->
-  <text x="256" y="300" text-anchor="middle" font-family="sans-serif" font-size="92" font-weight="900" fill="#08233F">동</text>
+  <!-- 앱 아이콘: 카메라 프레임 + 지도 핀 + ON (Remember 동구) -->
+  <rect width="512" height="512" rx="112" fill="#FFFFFF"/>
+  <!-- 파란 모서리 프레임 -->
+  <g fill="none" stroke="#2B8BD3" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M78 164 V128 Q78 96 110 96 H164"/>
+    <path d="M348 96 H402 Q434 96 434 128 V164"/>
+    <path d="M78 348 V384 Q78 416 110 416 H164"/>
+    <path d="M348 416 H402 Q434 416 434 384 V348"/>
+  </g>
+  <!-- 지도 핀 -->
+  <path d="M256 448 C214 394 128 322 128 226 A128 128 0 1 1 384 226 C384 322 298 394 256 448 Z" fill="#2E3B55"/>
+  <circle cx="256" cy="226" r="86" fill="#FFFFFF"/>
+  <!-- ON 버튼 -->
+  <rect x="170" y="194" width="172" height="64" rx="32" fill="#EE7A3C"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M213 213 A21 21 0 1 0 235 213"/>
+    <line x1="224" y1="204" x2="224" y2="226"/>
+    <path d="M268 246 V208 L304 246 V208"/>
+  </g>
 </svg>

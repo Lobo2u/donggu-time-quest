@@ -12,6 +12,7 @@ const defaultState = () => ({
   // 미션투어 코스: 완주 보상 수령 여부, 획득 뱃지
   courses: {},       // { [courseId]: { rewardClaimed: bool } }
   badges: [],        // 획득한 완주 뱃지 이름들
+  seenStories: [],   // 이미 본 스토리 대화 id (StoryDialog)
   locations: {
     sojedom: { status: 'available', missionComplete: false, arrivedOnce: false },
     jungang: { status: 'locked',    missionComplete: false, arrivedOnce: false },
@@ -33,6 +34,8 @@ const defaultState = () => ({
   },
   // 일일 탐험 보너스
   dailyBonus: { lastClaim: 0, streak: 0 },
+  // 발급한 파트너 쿠폰: 매장 리더기가 같은 번호를 읽도록 한 번 만든 번호를 유지
+  coupons: {},       // { [locationId]: { code: '12자리 숫자', issuedAt } }
   // persisted mid-mission state
   activeMission: null, // { locationId } | null
   lastReward: null,    // { buddyId, xpGained, shardsGained, leveledUp }
@@ -52,6 +55,7 @@ function loadSave() {
         buddies:    { ...base.buddies,    ...parsed.buddies },
         checkIns:   { ...base.checkIns,   ...parsed.checkIns },
         dailyBonus: { ...base.dailyBonus, ...parsed.dailyBonus },
+        coupons:    { ...base.coupons,    ...parsed.coupons },
         courses:    { ...base.courses,    ...parsed.courses },
         badges:     parsed.badges ?? base.badges,
       }
@@ -71,10 +75,14 @@ watch(
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
-export function initPlayer(guide) {
-  game.guide = guide
+export function initPlayer() {
   game.initialized = true
   game.locations.sojedom.status = 'available'
+}
+
+// 첫 QR 인식 때 고른 탐험 동반자
+export function setGuide(guide) {
+  game.guide = guide
 }
 
 export function markArrived(locationId) {
@@ -188,6 +196,16 @@ export function resetGame() {
   const fresh = defaultState()
   Object.keys(fresh).forEach(k => { game[k] = fresh[k] })
   try { localStorage.removeItem(SAVE_KEY) } catch {}
+  initPlayer() // 시작 화면이 없으므로 초기화 후 바로 새 게임
+}
+
+// 시연 초기화: 탐험 진행만 지우고, 고른 동반자와 시작 안내 대화를 본 기록은 남김
+export function resetProgress() {
+  const keep = { guide: game.guide, demoMode: game.demoMode, seenStories: (game.seenStories ?? []).filter(id => id === 'intro') }
+  const fresh = defaultState()
+  Object.keys(fresh).forEach(k => { game[k] = fresh[k] })
+  Object.assign(game, keep)
+  initPlayer()
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

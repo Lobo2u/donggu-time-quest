@@ -6,7 +6,7 @@ import 'leaflet/dist/leaflet.css'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
 import OnboardingTour from '../components/OnboardingTour.vue'
-import { game, resetGame, canClaimDaily, claimDaily } from '../store/gameStore.js'
+import { game, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import {
   geo, effectivePos, distanceMeters, bearing, bearingLabel, fmtDistance,
   startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo,
@@ -266,7 +266,7 @@ function renderPlayer() {
     const icon = L.divIcon({
       html: `<div class="lf-user-marker">
                <div class="lf-user-pulse"></div>
-               <div class="lf-user-avatar">${guideVariant() === 'jungang' ? '🏪' : '🐧'}</div>
+               <div class="lf-user-avatar"><img src="${import.meta.env.BASE_URL}sprites/png/${guideVariant() === 'jungang' ? 'jungang' : 'majung'}-idle.png" alt=""></div>
              </div>`,
       className: '', iconSize: [46, 46], iconAnchor: [23, 23],
     })
@@ -377,7 +377,6 @@ function recenter() {
   if (p && leafletMap) leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
 }
 function go(path) { menuOpen.value = false; router.push(path) }
-function doReset() { menuOpen.value = false; resetGame(); router.replace('/') }
 
 // ── 반응형 마커 업데이트 ──────────────────────────────────────────────────────
 watch(
@@ -472,7 +471,6 @@ onBeforeUnmount(() => {
           <button class="menu-item" @click="go('/qr-admin')"><span class="msr">qr_code_2</span> QR 발급</button>
           <button class="menu-item" @click="go('/field-markers')"><span class="msr">qr_code_2</span> 타깃 팻말</button>
           <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
-          <button class="menu-item danger" @click="doReset"><span class="msr">refresh</span> 처음부터</button>
         </template>
       </div>
     </Transition>
