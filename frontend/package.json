@@ -11,7 +11,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "node --test",
-    "sprites": "node scripts/export-sprites.mjs"
+    "sprites": "node scripts/export-sprites.mjs",
+    "ar-buildings": "node scripts/gen-ar-buildings.mjs"
   },
   "dependencies": {
     "jsqr": "^1.4.0",

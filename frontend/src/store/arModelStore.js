@@ -23,11 +23,11 @@ export const LOCATION_NAMES = {
 // 실제 서비스에서는 백엔드 업로드로 대체. 현재는 데모.
 
 const META_KEY = 'donggu-tq-ar-models-v1'
-const SEED_KEY = 'donggu-tq-ar-models-seed-v1'
+const SEED_KEY = 'donggu-tq-ar-models-seed-v2'
 const DB_NAME = 'donggu-tq-ar'
 const STORE = 'glb'
-// 코스 정류장용 플레이스홀더 GLB (실제 Blender 모델로 교체 전까지 데모용)
-const PLACEHOLDER_GLB = `${import.meta.env.BASE_URL}ar/test/building.glb`
+// 코스 정류장용 기본 입체 건물 GLB (scripts/gen-ar-buildings.mjs 로 생성한 저폴리 모델)
+const courseGlb = id => `${import.meta.env.BASE_URL}ar/course/${id}/building.glb`
 
 function load() {
   try {
@@ -48,13 +48,15 @@ function persist() {
   }
 }
 
-// 코스 5개 정류장을 플레이스홀더 AR 로 1회 시드 (관리 콘솔·스튜디오에서 실제 모델 URL 로 교체).
+// 코스 5개 정류장에 기본 입체 건물을 1회 시드. 아직 없거나 과거 플레이스홀더면 코스 GLB 로 채운다.
+// (관리 콘솔·스튜디오에서 실제 Blender 모델 URL 로 자유롭게 교체 가능)
 function seedCourse() {
   try { if (localStorage.getItem(SEED_KEY)) return } catch { return }
   for (const [id] of COURSE_STOPS) {
-    if (!arModels[id]) arModels[id] = {
-      glbUrl: PLACEHOLDER_GLB, usdzUrl: '', videoUrl: '', poster: '',
-      scaleMeters: 1, yawDeg: 0, placeholder: true, updated: Date.now(),
+    const cur = arModels[id]
+    if (!cur || cur.placeholder || !cur.glbUrl) arModels[id] = {
+      glbUrl: courseGlb(id), usdzUrl: '', videoUrl: '', poster: '',
+      scaleMeters: 1, yawDeg: 0, updated: Date.now(),
     }
   }
   try { localStorage.setItem(META_KEY, JSON.stringify(arModels)); localStorage.setItem(SEED_KEY, '1') } catch {}
