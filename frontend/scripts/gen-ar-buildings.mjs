@@ -103,7 +103,7 @@ function translate(g, dx, dy, dz) {
 }
 
 // ── GLB 빌더 (텍스처 임베드 지원) ─────────────────────────────────────
-function buildGlb(parts, texturePng) {
+function buildGlb(parts, texture) {
   const chunks = []; let offset = 0
   const bufferViews = [], accessors = [], materials = [], primitives = []
   const images = [], textures = [], samplers = []
@@ -114,11 +114,11 @@ function buildGlb(parts, texturePng) {
     if (target) bv.target = target
     bufferViews.push(bv); chunks.push(buf); offset += buf.length; return bufferViews.length - 1
   }
-  // 텍스처(사진/절차적 PNG) 임베드
+  // 텍스처(실제 사진 JPG/PNG 또는 절차적 PNG) 임베드
   let texIndex = -1
-  if (texturePng) {
-    const iv = addView(texturePng)
-    images.push({ bufferView: iv, mimeType: 'image/png' })
+  if (texture) {
+    const iv = addView(texture.data)
+    images.push({ bufferView: iv, mimeType: texture.mime })
     samplers.push({ magFilter: 9729, minFilter: 9987, wrapS: 10497, wrapT: 10497 })
     textures.push({ source: 0, sampler: 0 })
     texIndex = 0
@@ -310,11 +310,12 @@ const TEX = { 'daejeon-station': stoneWindows, woosong: glassGrid, 'daedong-maeu
 for (const [id, parts] of Object.entries(buildings)) {
   const dir = resolve(ROOT, 'public', 'ar', 'course', id)
   mkdirSync(dir, { recursive: true })
-  // 실제 사진 우선: public/ar/course/<id>/facade.png 가 있으면 그 사진을 텍스처로 사용
-  const photo = resolve(dir, 'facade.png')
+  // 실제 사진 우선: facade.jpg/png 가 있으면 그 사진을, 없으면 절차적 텍스처
+  const jpg = resolve(dir, 'facade.jpg'), png = resolve(dir, 'facade.png')
   let texture = null, src = ''
-  if (existsSync(photo)) { texture = readFileSync(photo); src = ' [실사진 facade.png]' }
-  else if (TEX[id]) { texture = TEX[id](); src = ' [생성 텍스처]' }
+  if (existsSync(jpg)) { texture = { data: readFileSync(jpg), mime: 'image/jpeg' }; src = ' [실사진 facade.jpg]' }
+  else if (existsSync(png)) { texture = { data: readFileSync(png), mime: 'image/png' }; src = ' [실사진 facade.png]' }
+  else if (TEX[id]) { texture = { data: TEX[id](), mime: 'image/png' }; src = ' [생성 텍스처]' }
   const glb = buildGlb(parts, texture)
   writeFileSync(resolve(dir, 'building.glb'), glb)
   console.log(`✓ ${id}: ${(glb.length / 1024).toFixed(1)} KB (${parts.length} parts)${src}`)
