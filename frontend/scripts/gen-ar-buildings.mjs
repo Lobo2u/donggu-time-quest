@@ -6,9 +6,10 @@
 //  - 우송대: 우송타워(고층) + 엔디컷관(컨테이너 적층)
 //  - 대동천: 하천 + 다리 + 둔치 + 징검다리
 // glTF 2.0 GLB 를 직접 작성. 머티리얼은 doubleSide 로 설정해 와인딩에 강건.
-import { mkdirSync, writeFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, readFileSync, existsSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { stoneWindows, glassGrid, muralWall } from './png.mjs'
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -20,17 +21,21 @@ function faceNormal(a, b, c) {
   const L = Math.hypot(...n) || 1
   return [n[0] / L, n[1] / L, n[2] / L]
 }
-function addTri(g, a, b, c, n = faceNormal(a, b, c)) {
+const TRI_UV = [[0, 0], [1, 0], [0.5, 1]]
+const QUAD_UV = [[0, 1], [1, 1], [1, 0], [0, 0]]
+function addTri(g, a, b, c, n = faceNormal(a, b, c), uv = TRI_UV) {
   const base = g.P.length / 3
-  for (const p of [a, b, c]) { g.P.push(...p); g.N.push(...n) }
+  const v = [a, b, c]
+  for (let i = 0; i < 3; i++) { g.P.push(...v[i]); g.N.push(...n); g.U.push(...uv[i]) }
   g.I.push(base, base + 1, base + 2)
 }
-function addQuad(g, a, b, c, d, n = faceNormal(a, b, c)) {
+function addQuad(g, a, b, c, d, n = faceNormal(a, b, c), uv = QUAD_UV) {
   const base = g.P.length / 3
-  for (const p of [a, b, c, d]) { g.P.push(...p); g.N.push(...n) }
+  const v = [a, b, c, d]
+  for (let i = 0; i < 4; i++) { g.P.push(...v[i]); g.N.push(...n); g.U.push(...uv[i]) }
   g.I.push(base, base + 1, base + 2, base, base + 2, base + 3)
 }
-const newGeom = () => ({ P: [], N: [], I: [] })
+const newGeom = () => ({ P: [], N: [], I: [], U: [] })
 
 // 단위 큐브 6면(CCW 바깥)
 const CUBE_FACES = [
@@ -97,23 +102,38 @@ function translate(g, dx, dy, dz) {
   return g
 }
 
-// ── GLB 빌더 ──────────────────────────────────────────────────────────
-function buildGlb(parts) {
+// ── GLB 빌더 (텍스처 임베드 지원) ─────────────────────────────────────
+function buildGlb(parts, texturePng) {
   const chunks = []; let offset = 0
   const bufferViews = [], accessors = [], materials = [], primitives = []
+  const images = [], textures = [], samplers = []
   const matIndex = new Map()
   const align = () => { while (offset % 4) { chunks.push(Buffer.from([0])); offset++ } }
   const addView = (buf, target) => {
-    align(); bufferViews.push({ buffer: 0, byteOffset: offset, byteLength: buf.length, target })
-    chunks.push(buf); offset += buf.length; return bufferViews.length - 1
+    align(); const bv = { buffer: 0, byteOffset: offset, byteLength: buf.length }
+    if (target) bv.target = target
+    bufferViews.push(bv); chunks.push(buf); offset += buf.length; return bufferViews.length - 1
   }
-  const material = (color) => {
-    const key = color.join(',')
+  // 텍스처(사진/절차적 PNG) 임베드
+  let texIndex = -1
+  if (texturePng) {
+    const iv = addView(texturePng)
+    images.push({ bufferView: iv, mimeType: 'image/png' })
+    samplers.push({ magFilter: 9729, minFilter: 9987, wrapS: 10497, wrapT: 10497 })
+    textures.push({ source: 0, sampler: 0 })
+    texIndex = 0
+  }
+  const material = (color, tex) => {
+    const key = tex ? 'TEX' : color.join(',')
     if (matIndex.has(key)) return matIndex.get(key)
-    materials.push({ pbrMetallicRoughness: { baseColorFactor: [...color, 1], metallicFactor: 0, roughnessFactor: 0.85 }, doubleSided: true, name: key })
+    const pbr = { metallicFactor: 0, roughnessFactor: 0.85 }
+    if (tex) { pbr.baseColorFactor = [1, 1, 1, 1]; pbr.baseColorTexture = { index: texIndex } }
+    else pbr.baseColorFactor = [...color, 1]
+    materials.push({ pbrMetallicRoughness: pbr, doubleSided: true, name: key })
     matIndex.set(key, materials.length - 1); return materials.length - 1
   }
-  for (const { P, N, I, color } of parts) {
+  for (const { P, N, I, U, color, tex } of parts) {
+    const useTex = tex && texIndex >= 0
     const pos = Buffer.from(new Float32Array(P).buffer)
     const nor = Buffer.from(new Float32Array(N).buffer)
     const idx = Buffer.from(new Uint16Array(I).buffer)
@@ -122,13 +142,19 @@ function buildGlb(parts) {
     const vPos = addView(pos, 34962); accessors.push({ bufferView: vPos, componentType: 5126, count: P.length / 3, type: 'VEC3', min, max }); const aPos = accessors.length - 1
     const vNor = addView(nor, 34962); accessors.push({ bufferView: vNor, componentType: 5126, count: N.length / 3, type: 'VEC3' }); const aNor = accessors.length - 1
     const vIdx = addView(idx, 34963); accessors.push({ bufferView: vIdx, componentType: 5123, count: I.length, type: 'SCALAR' }); const aIdx = accessors.length - 1
-    primitives.push({ attributes: { POSITION: aPos, NORMAL: aNor }, indices: aIdx, material: material(color) })
+    const attributes = { POSITION: aPos, NORMAL: aNor }
+    if (useTex) {
+      const uv = Buffer.from(new Float32Array(U).buffer)
+      const vUv = addView(uv, 34962); accessors.push({ bufferView: vUv, componentType: 5126, count: U.length / 2, type: 'VEC2' }); attributes.TEXCOORD_0 = accessors.length - 1
+    }
+    primitives.push({ attributes, indices: aIdx, material: material(color, useTex) })
   }
   const bin = Buffer.concat(chunks)
   const json = {
     asset: { version: '2.0', generator: 'donggu-tq gen-ar-buildings' },
     scene: 0, scenes: [{ nodes: [0] }], nodes: [{ mesh: 0 }],
     meshes: [{ primitives }], materials, accessors, bufferViews, buffers: [{ byteLength: bin.length }],
+    ...(images.length ? { images, textures, samplers } : {}),
   }
   let jsonBuf = Buffer.from(JSON.stringify(json), 'utf8')
   while (jsonBuf.length % 4) jsonBuf = Buffer.concat([jsonBuf, Buffer.from(' ')])
@@ -141,7 +167,7 @@ function buildGlb(parts) {
   return Buffer.concat([header, jh, jsonBuf, bh, binBuf])
 }
 
-const P = (geom, color) => ({ ...geom, color })
+const P = (geom, color, tex = false) => ({ ...geom, color, tex })
 
 // ── 색상 팔레트 ───────────────────────────────────────────────────────
 const C = {
@@ -155,9 +181,9 @@ const C = {
 // 벽화마을 알록달록 벽 색
 const MURAL = [[0.88, 0.45, 0.42], [0.95, 0.78, 0.35], [0.45, 0.68, 0.55], [0.4, 0.6, 0.78], [0.78, 0.55, 0.75], [0.9, 0.6, 0.35], [0.55, 0.72, 0.4]]
 
-// 작은 집(벽 + 박공지붕)
-function house(w, h, d, cx, cy, cz, wallColor, roofColor = C.redRoof) {
-  return [P(box(w, h, d, cx, cy + h / 2, cz), wallColor), P(gable(w + 0.2, d + 0.2, h * 0.5, cx, cy + h, cz), roofColor)]
+// 작은 집(벽 + 박공지붕). texWall=true 면 벽에 벽화 텍스처.
+function house(w, h, d, cx, cy, cz, wallColor, roofColor = C.redRoof, texWall = false) {
+  return [P(box(w, h, d, cx, cy + h / 2, cz), wallColor, texWall), P(gable(w + 0.2, d + 0.2, h * 0.5, cx, cy + h, cz), roofColor)]
 }
 // 풍차 날개 4개(허브 앞면)
 function windmillBlades(hx, hy, hz) {
@@ -183,8 +209,8 @@ const buildings = {
   // 우송대: 우송타워(고층 유리) + 엔디컷관(컨테이너 적층) + 광장
   woosong: [
     P(box(13, 0.3, 9, 0, 0.15, 0), C.ground),
-    // 우송타워
-    P(box(4.6, 17, 4.6, -3.2, 8.5, -0.5), C.glass),
+    // 우송타워(유리 커튼월 텍스처)
+    P(box(4.6, 17, 4.6, -3.2, 8.5, -0.5), C.glass, true),
     P(box(4.2, 16.5, 0.18, -3.2, 8.5, 1.85), C.glassLt),
     P(box(0.18, 16.5, 4.2, -0.95, 8.5, -0.5), C.glassLt),
     P(box(5.0, 1.2, 5.0, -3.2, 17.4, -0.5), C.crown),
@@ -197,11 +223,11 @@ const buildings = {
   // 대전역: 1920년대 석조 역사 — 좌우대칭, 중앙 현관 돌출+박공, 시계, 붉은 지붕, 기둥
   'daejeon-station': [
     P(box(16, 0.3, 7, 0, 0.15, 0), C.ground),
-    // 좌우 몸체
-    P(box(15, 4.5, 5, 0, 2.25, 0), C.stone),
+    // 좌우 몸체(석조+창문 텍스처)
+    P(box(15, 4.5, 5, 0, 2.25, 0), C.stone, true),
     P(box(15.3, 0.7, 5.3, 0, 4.7, 0), C.redRoof),
-    // 중앙 현관부(높게)
-    P(box(5.5, 6.8, 5.6, 0, 3.4, 0.4), C.stoneDk),
+    // 중앙 현관부(높게, 텍스처)
+    P(box(5.5, 6.8, 5.6, 0, 3.4, 0.4), C.stoneDk, true),
     P(gable(6.1, 6.0, 1.8, 0, 6.8, 0.4), C.redRoofDk),
     // 시계
     P(box(1.3, 1.3, 0.3, 0, 5.7, 3.25), C.dark),
@@ -217,18 +243,18 @@ const buildings = {
     P(box(11, 1, 9, 0, 0.5, -1), C.soil),
     P(box(9, 1, 6.5, 0, 1.5, -2.2), [0.5, 0.46, 0.42]),
     P(box(7, 1, 4.5, 0, 2.5, -3.2), [0.48, 0.44, 0.4]),
-    // 1단 집들(바닥 y=1)
-    ...house(1.6, 1.6, 1.6, -3.6, 1, 2.4, MURAL[0]),
-    ...house(1.6, 1.4, 1.6, -1.4, 1, 2.6, MURAL[1]),
-    ...house(1.6, 1.7, 1.6, 1.4, 1, 2.5, MURAL[2]),
-    ...house(1.6, 1.5, 1.6, 3.7, 1, 2.3, MURAL[3]),
+    // 1단 집들(바닥 y=1, 벽화 텍스처)
+    ...house(1.6, 1.6, 1.6, -3.6, 1, 2.4, MURAL[0], C.redRoof, true),
+    ...house(1.6, 1.4, 1.6, -1.4, 1, 2.6, MURAL[1], C.redRoof, true),
+    ...house(1.6, 1.7, 1.6, 1.4, 1, 2.5, MURAL[2], C.redRoof, true),
+    ...house(1.6, 1.5, 1.6, 3.7, 1, 2.3, MURAL[3], C.redRoof, true),
     // 2단 집들(y=2)
-    ...house(1.5, 1.5, 1.5, -2.6, 2, 0.4, MURAL[4]),
-    ...house(1.5, 1.6, 1.5, 0.1, 2, 0.5, MURAL[5]),
-    ...house(1.5, 1.4, 1.5, 2.6, 2, 0.3, MURAL[6]),
+    ...house(1.5, 1.5, 1.5, -2.6, 2, 0.4, MURAL[4], C.redRoof, true),
+    ...house(1.5, 1.6, 1.5, 0.1, 2, 0.5, MURAL[5], C.redRoof, true),
+    ...house(1.5, 1.4, 1.5, 2.6, 2, 0.3, MURAL[6], C.redRoof, true),
     // 3단 집들(y=3)
-    ...house(1.4, 1.5, 1.4, -1.3, 3, -1.4, MURAL[2]),
-    ...house(1.4, 1.6, 1.4, 1.3, 3, -1.5, MURAL[0]),
+    ...house(1.4, 1.5, 1.4, -1.3, 3, -1.4, MURAL[2], C.redRoof, true),
+    ...house(1.4, 1.6, 1.4, 1.3, 3, -1.5, MURAL[0], C.redRoof, true),
     // 중앙 계단(아래→위)
     P(box(1.2, 0.3, 1.0, 0, 1.15, 3.6), C.concrete),
     P(box(1.2, 0.3, 1.0, 0, 1.75, 2.7), C.concrete),
@@ -278,11 +304,19 @@ function pyramidRoof(w, d, ph, cx, cy, cz) {
   return g
 }
 
+// 건물별 기본 텍스처(절차적). 실제 사진이 있으면 그걸 우선 사용.
+const TEX = { 'daejeon-station': stoneWindows, woosong: glassGrid, 'daedong-maeul': muralWall }
+
 for (const [id, parts] of Object.entries(buildings)) {
-  const out = resolve(ROOT, 'public', 'ar', 'course', id, 'building.glb')
-  mkdirSync(dirname(out), { recursive: true })
-  const glb = buildGlb(parts)
-  writeFileSync(out, glb)
-  console.log(`✓ ${id}: ${(glb.length / 1024).toFixed(1)} KB (${parts.length} parts)`)
+  const dir = resolve(ROOT, 'public', 'ar', 'course', id)
+  mkdirSync(dir, { recursive: true })
+  // 실제 사진 우선: public/ar/course/<id>/facade.png 가 있으면 그 사진을 텍스처로 사용
+  const photo = resolve(dir, 'facade.png')
+  let texture = null, src = ''
+  if (existsSync(photo)) { texture = readFileSync(photo); src = ' [실사진 facade.png]' }
+  else if (TEX[id]) { texture = TEX[id](); src = ' [생성 텍스처]' }
+  const glb = buildGlb(parts, texture)
+  writeFileSync(resolve(dir, 'building.glb'), glb)
+  console.log(`✓ ${id}: ${(glb.length / 1024).toFixed(1)} KB (${parts.length} parts)${src}`)
 }
 console.log('done')
