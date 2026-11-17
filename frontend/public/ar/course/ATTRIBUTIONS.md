@@ -17,6 +17,23 @@ CC BY-SA 는 **저작자 표시 + 동일조건 변경허락** 의무가 있으�
 - 출처: https://commons.wikimedia.org/wiki/File:Woosong_University_West_Campus_20190608_A01.jpg
 - (원본을 최대 1024px·JPEG 품질 82로 리사이즈해 사용)
 
-## 그 외 정류장
-- 대동벽화마을 · 대동하늘공원 · 대동천: 커먼즈에 적합한 CC 사진이 없어 **절차적 생성 텍스처/무텍스처**를 사용.
-  실제 사진이 확보되면 해당 폴더에 `facade.jpg` 를 넣고 `npm run ar-buildings` 재실행하면 교체됩니다.
+## 대동벽화마을 (daedong-maeul/facade.jpg)
+- 제목: Daedong mural Village A02.jpg
+- 저작자: *Youngjin (YOUNGJIN KO)
+- 라이선스: CC BY-SA 3.0
+- 출처: https://commons.wikimedia.org/wiki/File:Daedong_mural_Village_A02.jpg
+
+## 대동천 (daedongcheon/facade.jpg)
+- 제목: Bridge of Daejeon line over Daejeon stream.jpg (대전선 철교·하천)
+- 저작자: Ryuch
+- 라이선스: CC BY 3.0
+- 출처: https://commons.wikimedia.org/wiki/File:Bridge_of_Daejeon_line_over_Daejeon_stream.jpg
+
+## 대동하늘공원 (daedong-sky/facade.jpg · 배경 패널)
+- 제목: Sikjangsan at Daedong.JPG (대동에서 본 식장산 — 공원 전망 주제에 부합)
+- 저작자: Ryuch
+- 라이선스: CC BY-SA 3.0 (+ GFDL 1.2+)
+- 출처: https://commons.wikimedia.org/wiki/File:Sikjangsan_at_Daedong.JPG
+
+> 모든 사진은 원본을 최대 1024px·JPEG 품질 82로 리사이즈해 사용.
+> 하늘공원은 풍차 CC 사진이 없어 공원에서 보이는 식장산 전경을 배경 패널로 사용.
