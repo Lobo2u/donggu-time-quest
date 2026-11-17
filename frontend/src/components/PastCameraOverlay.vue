@@ -3,16 +3,22 @@
 // 카메라 화면(목업: 장소의 현재 모습) 위에 과거 재현 일러스트를 반투명하게 겹치고,
 // '위치 맞추기'를 켜면 손가락으로 옮기기/크기 조절해 실제 건물에 맞춘다.
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import SceneSvg from './SceneSvg.vue'
 import CameraMock from './CameraMock.vue'
 import { useFit } from '../composables/useFit.js'
 import { getOverlay } from '../store/arOverlayStore.js'
+import { hasModel } from '../store/arModelStore.js'
 
 const props = defineProps({
   variant: { type: String, default: 'sojedom' },
   label:   { type: String, default: '' },
 })
 const emit = defineEmits(['close'])
+
+const router = useRouter()
+const has3d = computed(() => hasModel(props.variant))
+function viewIn3d() { router.push(`/ar-view/${props.variant}`) }
 
 // 관리자(AR 저작)가 올린 과거 사진/영상이 있으면 그걸 겹치고, 없으면 기본 재현 일러스트를 쓴다.
 const admin = computed(() => getOverlay(props.variant))
@@ -53,6 +59,9 @@ const fit = useFit(aligning, admin.value ? { x: admin.value.x, y: admin.value.y,
         <span>과거</span>
       </label>
       <p class="pc-note" v-if="!admin">※ 역사 재현 일러스트(창작)입니다. 실제 과거 사진이 아니에요.</p>
+      <button v-if="has3d" class="pc-3d" @click="viewIn3d">
+        <span class="msr" style="font-size:20px">view_in_ar</span> 입체로 보기 (AR)
+      </button>
       <button class="pc-done" @click="emit('close')">다 봤어요</button>
     </div>
   </div>
@@ -95,6 +104,11 @@ const fit = useFit(aligning, admin.value ? { x: admin.value.x, y: admin.value.y,
 .pc-slider { display: flex; align-items: center; gap: 10px; color: white; font-size: 12px; font-weight: 800; }
 .pc-slider input { flex: 1; accent-color: var(--orange); }
 .pc-note { font-size: 10px; font-weight: 600; color: #BFD3E6; text-align: center; word-break: keep-all; }
+.pc-3d {
+  height: 48px; border: 2px solid var(--orange); border-radius: 14px; cursor: pointer;
+  background: #0008; color: #fff; font-family: var(--font); font-size: 15px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
 .pc-done {
   height: 48px; border: none; border-radius: 14px; cursor: pointer;
   background: var(--orange); color: var(--navy); font-family: var(--font); font-size: 15px; font-weight: 900;

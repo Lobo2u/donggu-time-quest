@@ -473,6 +473,8 @@ onBeforeUnmount(() => {
           <button class="menu-item" @click="go('/photo-targets')"><span class="msr">photo_camera</span> 사진 인증 등록</button>
           <button class="menu-item" @click="go('/ar-building')"><span class="msr">view_in_ar</span> AR 건물 무대</button>
           <button class="menu-item" @click="go('/ar-studio')"><span class="msr">photo_camera_front</span> AR 과거 겹치기 저작</button>
+          <button class="menu-item" @click="go('/ar-model-studio')"><span class="msr">deployed_code</span> AR 입체 건물 등록</button>
+          <button class="menu-item" @click="go('/ar-console')"><span class="msr">terminal</span> AR 관리 콘솔·코드</button>
         </template>
       </div>
     </Transition>
