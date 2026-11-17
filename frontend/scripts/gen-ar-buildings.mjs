@@ -181,9 +181,20 @@ const C = {
 // 벽화마을 알록달록 벽 색
 const MURAL = [[0.88, 0.45, 0.42], [0.95, 0.78, 0.35], [0.45, 0.68, 0.55], [0.4, 0.6, 0.78], [0.78, 0.55, 0.75], [0.9, 0.6, 0.35], [0.55, 0.72, 0.4]]
 
-// 작은 집(벽 + 박공지붕). texWall=true 면 벽에 벽화 텍스처.
+// 파사드 박스: 정면(+Z)에만 사진 텍스처, 나머지 면은 단색(왜곡 방지).
+// 본체(단색 박스) + 정면 사진 쿼드(살짝 앞으로) 두 파트를 돌려준다.
+function facadeBox(sx, sy, sz, cx, cy, cz, bodyColor) {
+  const body = box(sx, sy, sz, cx, cy, cz)
+  const g = newGeom()
+  const hx = sx / 2, hy = sy / 2, z = cz + sz / 2 + 0.02
+  addQuad(g, [cx - hx, cy - hy, z], [cx + hx, cy - hy, z], [cx + hx, cy + hy, z], [cx - hx, cy + hy, z])
+  return [P(body, bodyColor, false), P(g, [1, 1, 1], true)]
+}
+
+// 작은 집(벽 + 박공지붕). texWall=true 면 정면에만 벽화 텍스처.
 function house(w, h, d, cx, cy, cz, wallColor, roofColor = C.redRoof, texWall = false) {
-  return [P(box(w, h, d, cx, cy + h / 2, cz), wallColor, texWall), P(gable(w + 0.2, d + 0.2, h * 0.5, cx, cy + h, cz), roofColor)]
+  const wall = texWall ? facadeBox(w, h, d, cx, cy + h / 2, cz, wallColor) : [P(box(w, h, d, cx, cy + h / 2, cz), wallColor)]
+  return [...wall, P(gable(w + 0.2, d + 0.2, h * 0.5, cx, cy + h, cz), roofColor)]
 }
 // 풍차 날개 4개(허브 앞면)
 function windmillBlades(hx, hy, hz) {
@@ -209,10 +220,8 @@ const buildings = {
   // 우송대: 우송타워(고층 유리) + 엔디컷관(컨테이너 적층) + 광장
   woosong: [
     P(box(13, 0.3, 9, 0, 0.15, 0), C.ground),
-    // 우송타워(유리 커튼월 텍스처)
-    P(box(4.6, 17, 4.6, -3.2, 8.5, -0.5), C.glass, true),
-    P(box(4.2, 16.5, 0.18, -3.2, 8.5, 1.85), C.glassLt),
-    P(box(0.18, 16.5, 4.2, -0.95, 8.5, -0.5), C.glassLt),
+    // 우송타워: 정면에만 캠퍼스 사진, 나머지 면은 유리색
+    ...facadeBox(4.6, 17, 4.6, -3.2, 8.5, -0.5, C.glass),
     P(box(5.0, 1.2, 5.0, -3.2, 17.4, -0.5), C.crown),
     // 엔디컷관: 오프셋 컨테이너
     P(box(5.2, 1.9, 3, 3.2, 0.95, -0.6), [0.85, 0.5, 0.3]),
@@ -223,11 +232,11 @@ const buildings = {
   // 대전역: 1920년대 석조 역사 — 좌우대칭, 중앙 현관 돌출+박공, 시계, 붉은 지붕, 기둥
   'daejeon-station': [
     P(box(16, 0.3, 7, 0, 0.15, 0), C.ground),
-    // 좌우 몸체(석조+창문 텍스처)
-    P(box(15, 4.5, 5, 0, 2.25, 0), C.stone, true),
+    // 좌우 몸체: 정면에만 역사 사진, 나머지 면은 석조색
+    ...facadeBox(15, 4.5, 5, 0, 2.25, 0, C.stone),
     P(box(15.3, 0.7, 5.3, 0, 4.7, 0), C.redRoof),
-    // 중앙 현관부(높게, 텍스처)
-    P(box(5.5, 6.8, 5.6, 0, 3.4, 0.4), C.stoneDk, true),
+    // 중앙 현관부(높게, 단색 석조)
+    P(box(5.5, 6.8, 5.6, 0, 3.4, 0.4), C.stoneDk),
     P(gable(6.1, 6.0, 1.8, 0, 6.8, 0.4), C.redRoofDk),
     // 시계
     P(box(1.3, 1.3, 0.3, 0, 5.7, 3.25), C.dark),
