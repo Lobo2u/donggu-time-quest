@@ -30,7 +30,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          BASE_PATH: /donggu-time-quest/
+          BASE_PATH: /   # 커스텀 도메인(ar.lobodoc.com) 루트 배포
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
