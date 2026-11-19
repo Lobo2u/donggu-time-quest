@@ -42,10 +42,18 @@ function nextStory() {
   if (storyStep.value < loc.storyContext.length) storyStep.value++
 }
 
+function getPos(opts) {
+  return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, opts))
+}
 async function readGPS() {
-  const pos = await new Promise((res, rej) =>
-    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 })
-  )
+  if (!navigator.geolocation) { const e = new Error('unavailable'); e.code = 2; throw e }
+  let pos
+  try {
+    pos = await getPos({ enableHighAccuracy: true, timeout: 9000, maximumAge: 5000 })
+  } catch (e) {
+    if (e.code === 1) throw e               // 권한 거부는 그대로
+    pos = await getPos({ enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }) // 타임아웃/불가 → 저정밀 재시도
+  }
   const d = distanceTo(pos.coords.latitude, pos.coords.longitude, loc.lat, loc.lng)
   userDistance.value = Math.round(d)
   return d <= CHECKIN_RADIUS + Math.min(pos.coords.accuracy ?? 0, 30)
@@ -55,8 +63,9 @@ async function checkGPS() {
   gpsState.value = 'checking'
   try {
     gpsState.value = (await readGPS()) ? 'near' : 'far'
-  } catch {
-    gpsState.value = 'denied'
+  } catch (e) {
+    // 권한 거부만 denied, 그 외(타임아웃·실내 등)는 far 로 재시도를 유도
+    gpsState.value = (e && e.code === 1) ? 'denied' : 'far'
   }
 }
 

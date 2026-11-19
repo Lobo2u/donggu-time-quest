@@ -55,9 +55,11 @@ export { WILD_COLLECT_RADIUS }
 let watchId = null
 let lastWalkPos = null
 
-// 유효 위치: 시연 위치 우선, 없으면 실제 GPS
+// 유효 위치: 시연 모드일 때만 가상 위치 우선. 실제 모드에선 실제 GPS 우선
+// (시연 모드를 꺼도 과거 demoPos 가 실제 GPS 를 덮어쓰던 문제 수정)
 export function effectivePos() {
-  return geo.demoPos ?? geo.pos
+  if (game.demoMode) return geo.demoPos ?? geo.pos
+  return geo.pos ?? geo.demoPos
 }
 
 export function distanceMeters(a, b) {
@@ -93,11 +95,9 @@ export function fmtDistance(m) {
 }
 
 // ── GPS 추적 ─────────────────────────────────────────────────────────────────
-export function startWatch() {
-  if (geo.watching || !navigator.geolocation) {
-    if (!navigator.geolocation) geo.error = 'unavailable'
-    return
-  }
+export function startWatch(highAccuracy = true) {
+  if (!navigator.geolocation) { geo.error = 'unavailable'; return }
+  if (geo.watching) return
   geo.watching = true
   watchId = navigator.geolocation.watchPosition(
     ({ coords }) => {
@@ -112,8 +112,17 @@ export function startWatch() {
       lastWalkPos = next
       geo.pos = next
     },
-    (err) => { geo.error = err.code === 1 ? 'denied' : 'unavailable' },
-    { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 },
+    (err) => {
+      if (err.code === 1) { geo.error = 'denied'; return } // 권한 거부
+      // 타임아웃/불가(실내 등): 고정밀이면 저정밀로 한 번 재시도
+      if (highAccuracy) {
+        navigator.geolocation.clearWatch(watchId); watchId = null; geo.watching = false
+        startWatch(false)
+      } else {
+        geo.error = 'unavailable'
+      }
+    },
+    { enableHighAccuracy: highAccuracy, maximumAge: 5000, timeout: highAccuracy ? 12000 : 20000 },
   )
 }
 
