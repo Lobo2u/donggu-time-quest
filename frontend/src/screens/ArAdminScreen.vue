@@ -5,7 +5,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { detectArCapabilities } from '../ar/platform.js'
-import { arModels, getModel, saveModel, clearModel, LOCATION_NAMES } from '../store/arModelStore.js'
+import ArScenePreview from '../components/ArScenePreview.vue'
+import { SCENE_STYLES } from '../ar/diorama.js'
+import { arModels, getModelSceneStyle, getModel, saveModel, clearModel, LOCATION_NAMES } from '../store/arModelStore.js'
 
 const router = useRouter()
 
@@ -34,36 +36,64 @@ const editingId = ref('')
 const saved = ref('')
 const err = ref('')
 
-function blank() { return { id: '', glbUrl: '', usdzUrl: '', videoUrl: '', poster: '', scaleMeters: 1, yawDeg: 0 } }
+function blank() { return { id: '', glbUrl: '', usdzUrl: '', videoUrl: '', poster: '', scaleMeters: 1, yawDeg: 0, sceneStyle: 'original' } }
 
 function edit(id) {
   const m = getModel(id) || {}
-  form.value = { id, glbUrl: m.glbUrl || '', usdzUrl: m.usdzUrl || '', videoUrl: m.videoUrl || '', poster: m.poster || '', scaleMeters: m.scaleMeters ?? 1, yawDeg: m.yawDeg ?? 0 }
+  form.value = { id, glbUrl: m.glbUrl || '', usdzUrl: m.usdzUrl || '', videoUrl: m.videoUrl || '', poster: m.poster || '', scaleMeters: m.scaleMeters ?? 1, yawDeg: m.yawDeg ?? 0, sceneStyle: getModelSceneStyle(id, m) }
   editingId.value = id; saved.value = ''; err.value = ''
 }
+if (getModel('daedong-maeul')) edit('daedong-maeul')
 function newEntry() { form.value = blank(); editingId.value = ''; saved.value = ''; err.value = '' }
+
+function setSceneStyle(key) {
+  form.value.sceneStyle = key
+  saved.value = ''
+}
+
+function saveStyle() {
+  err.value = ''; saved.value = ''
+  if (!editingId.value || !getModel(editingId.value)) return
+  try {
+    saveModel(editingId.value, { sceneStyle: form.value.sceneStyle })
+    saved.value = editingId.value
+  } catch (e) { err.value = e.message || '저장 실패' }
+}
 
 function save() {
   err.value = ''; saved.value = ''
   const id = form.value.id.trim()
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(id)) { err.value = 'id 는 영문·숫자·_-만 사용하세요 (예: sojedom).'; return }
-  if (!form.value.glbUrl && !form.value.usdzUrl) { err.value = 'GLB URL 또는 USDZ URL 중 하나는 필요해요.'; return }
+  if (!form.value.glbUrl.trim() && !form.value.usdzUrl.trim() && !getModel(editingId.value)?.blobKey) {
+    err.value = 'GLB URL 또는 USDZ URL 중 하나는 필요해요.'
+    return
+  }
+  const scale = Number(form.value.scaleMeters), yaw = Number(form.value.yawDeg)
+  if (!Number.isFinite(scale) || scale < .05 || scale > 50 || !Number.isFinite(yaw)) {
+    err.value = '크기는 0.05~50 사이, 회전은 숫자로 입력해 주세요.'
+    return
+  }
   try {
     saveModel(id, {
       glbUrl: form.value.glbUrl.trim(), usdzUrl: form.value.usdzUrl.trim(),
       videoUrl: form.value.videoUrl.trim(), poster: form.value.poster.trim(),
-      scaleMeters: Number(form.value.scaleMeters) || 1, yawDeg: Number(form.value.yawDeg) || 0,
+      scaleMeters: scale, yawDeg: yaw, sceneStyle: form.value.sceneStyle,
     })
     editingId.value = id; saved.value = id
   } catch (e) { err.value = e.message || '저장 실패' }
 }
 
 async function remove(id) {
-  await clearModel(id)
-  if (editingId.value === id) newEntry()
+  try {
+    await clearModel(id)
+    if (editingId.value === id) newEntry()
+  } catch (e) { err.value = e.message || '삭제 실패' }
 }
 
-function openViewer(id) { router.push(`/ar-view/${id}`) }
+function openViewer(id, preview = false) {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]*$/.test(id)) return
+  router.push({ path: `/ar-view/${id}`, query: preview ? { preview: '1' } : {} })
+}
 
 // ── 코드/링크 생성 ───────────────────────────────────────────
 const appBase = computed(() => `${location.origin}${import.meta.env.BASE_URL}`)
@@ -84,6 +114,7 @@ saveModel('${id}', {
   videoUrl: '${v || ''}',  // 배경 영상 (선택)
   scaleMeters: ${Number(form.value.scaleMeters) || 1},
   yawDeg: ${Number(form.value.yawDeg) || 0},
+  sceneStyle: ${JSON.stringify(form.value.sceneStyle)},
 })` },
     { key: 'iframe', title: '외부 페이지에 임베드', code:
 `<iframe src="${link}"
@@ -104,19 +135,29 @@ async function copy(key, text) {
     <header class="hd">
       <button class="back" @click="router.push('/map')">← 지도</button>
       <h1>AR 관리 콘솔</h1>
-      <span class="sub">지원 현황 · 등록 · 코드</span>
+      <span class="sub">장소별 테마 · 3D 미리보기</span>
     </header>
 
-    <!-- 지원 현황 -->
-    <section class="card">
-      <h2>이 기기의 AR 지원</h2>
-      <div class="caps">
-        <div v-for="c in capList" :key="c.key" class="cap" :class="{ ok: c.ok }">
-          <span class="msr">{{ c.ok ? 'check_circle' : 'cancel' }}</span>
-          <div><strong>{{ c.label }}</strong><small>{{ c.note }}</small></div>
+    <section class="card stage-editor">
+      <div class="stage-heading">
+        <div><span class="eyebrow">TIME QUEST · SCENE STUDIO</span>
+          <h2>장면의 분위기를 고르세요</h2>
+          <p>{{ editingId ? LOCATION_NAMES[editingId] || editingId : '대동벽화마을 샘플' }} · 카메라 없는 미리보기</p>
         </div>
       </div>
-      <p class="muted">※ 지원 여부는 접속한 기기·브라우저 기준. 플레이어는 지원에 맞춰 자동 분기(WebXR→QuickLook→매직윈도우)합니다.</p>
+      <div class="stage-grid">
+        <ArScenePreview :key="editingId || 'sample'" :model-id="editingId" :scene-style="form.sceneStyle" />
+        <div class="preset-list">
+          <button v-for="(preset, key) in SCENE_STYLES" :key="key" class="preset" :class="{ selected: form.sceneStyle === key }"
+            @click="setSceneStyle(key)" :aria-pressed="form.sceneStyle === key">
+            <span class="swatch" :style="{ background: preset.sky || '#355770' }" aria-hidden="true"></span>
+            <span><strong>{{ preset.label }}</strong><small>{{ preset.description }}</small></span>
+          </button>
+        </div>
+      </div>
+      <p class="muted">선택한 연출은 바로 반영돼요. 모델은 등록본 기준이며, 새 장소는 샘플을 보여줘요. 실제 카메라·공간 정합 및 iPhone의 USDZ는 이 미리보기 범위 밖이에요.</p>
+      <button v-if="editingId" class="stage-save" @click="saveStyle">{{ saved ? '이 브라우저에 저장됨 ✓' : '이 장소에 스타일 저장' }}</button>
+      <p v-if="err" class="err" role="alert">{{ err }}</p>
     </section>
 
     <!-- 등록 목록 -->
@@ -132,6 +173,7 @@ async function copy(key, text) {
             <strong>{{ id }}</strong>
             <span v-if="LOCATION_NAMES[id]" class="tag">{{ LOCATION_NAMES[id] }}</span>
             <span v-if="arModels[id].placeholder" class="tag ph">샘플</span>
+            <span class="tag theme">{{ SCENE_STYLES[getModelSceneStyle(id, arModels[id])].label }}</span>
             <span class="kinds">
               <span v-if="arModels[id].glbUrl || arModels[id].blobKey" class="k">GLB</span>
               <span v-if="arModels[id].usdzUrl" class="k">USDZ</span>
@@ -159,11 +201,23 @@ async function copy(key, text) {
         <label class="f">크기(배율)<input v-model.number="form.scaleMeters" type="number" min="0.05" step="0.1" /></label>
         <label class="f">회전(°)<input v-model.number="form.yawDeg" type="number" step="5" /></label>
       </div>
-      <p v-if="err" class="err">{{ err }}</p>
+      <p class="muted">저장 내용은 이 브라우저에만 적용돼요. 다른 기기나 운영 서버에는 전송되지 않아요.</p>
       <div class="g2">
-        <button class="save" @click="save">{{ saved ? '저장됨 ✓' : editingId ? '수정 저장' : '추가' }}</button>
-        <button v-if="form.id" class="mini" @click="openViewer(form.id.trim())">미리 열기</button>
+        <button class="save" @click="save">{{ saved ? '이 브라우저에 저장됨 ✓' : editingId ? '수정 저장' : '추가' }}</button>
+        <button v-if="editingId" class="mini" @click="openViewer(editingId, true)">저장된 장면 열기</button>
       </div>
+    </section>
+
+    <!-- 지원 현황 -->
+    <section class="card">
+      <h2>이 기기의 AR 지원</h2>
+      <div class="caps">
+        <div v-for="c in capList" :key="c.key" class="cap" :class="{ ok: c.ok }">
+          <span class="msr">{{ c.ok ? 'check_circle' : 'cancel' }}</span>
+          <div><strong>{{ c.label }}</strong><small>{{ c.note }}</small></div>
+        </div>
+      </div>
+      <p class="muted">※ 지원 여부는 접속한 기기·브라우저 기준. 플레이어는 지원에 맞춰 자동 분기(WebXR→QuickLook→매직윈도우)합니다.</p>
     </section>
 
     <!-- 코드/링크 -->
@@ -187,6 +241,30 @@ async function copy(key, text) {
 .hd .sub { font-size: 11px; color: #8aa6ba; }
 
 .card { margin: 12px; background: #0b2033; border: 1px solid #ffffff14; border-radius: 14px; padding: 14px; }
+.card { max-width: 780px; }
+@media (min-width: 805px) { .card { margin-inline: auto; } }
+.stage-editor { background: #281e19; border-color: #825737; }
+.stage-heading { margin-bottom: 12px; }
+.stage-heading h2 { margin: 3px 0; color: #fff1d7; font-size: 19px; }
+.stage-heading p { margin: 0; color: #ddbf9f; font-size: 11px; }
+.eyebrow { color: #edab67; letter-spacing: .09em; font-size: 10px; font-weight: 900; }
+.stage-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .68fr); gap: 10px; }
+.preset-list { display: grid; align-content: stretch; gap: 6px; }
+.preset { display: flex; align-items: center; gap: 8px; padding: 7px; border: 1px solid #ffffff24; border-radius: 8px; text-align: left; color: #f8dfc3; background: #352821; cursor: pointer; }
+.preset.selected { border-color: #ecb26e; box-shadow: inset 0 0 0 1px #ecb26e; color: #fff6e7; }
+.preset small { display: block; font-size: 10px; color: #e1c09c; }
+.swatch { flex: 0 0 16px; height: 16px; border: 1px solid #edb06e60; border-radius: 5px; }
+.stage-save { margin-top: 8px; padding: 9px 11px; border: 1px solid #edb06e; border-radius: 8px; color: #281e19; background: #edb06e; font-weight: 900; cursor: pointer; }
+.stage-editor .muted { color: #dfc4aa; }
+.tag.theme { color: #ffe4b9; }
+@media (max-width: 500px) {
+  .stage-grid { grid-template-columns: minmax(0, 1fr); }
+  .preset-list { grid-template-columns: repeat(3,minmax(0,1fr)); }
+  .preset { align-items: flex-start; }
+}
+@media (max-width: 375px) {
+  .preset-list { grid-template-columns: 1fr; }
+}
 .card h2 { font-size: 13px; font-weight: 900; margin-bottom: 10px; }
 .row-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
 .muted { font-size: 11px; color: #8aa6ba; line-height: 1.6; margin-top: 8px; word-break: keep-all; }

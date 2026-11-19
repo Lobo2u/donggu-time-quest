@@ -11,6 +11,7 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import { loadBuildingGlb, measureResources, disposeResources } from '../ar/assets.js'
+import { createDiorama, resolveSceneStyle } from '../ar/diorama.js'
 
 export function useArViewer() {
   const state = reactive({
@@ -19,12 +20,14 @@ export function useArViewer() {
   })
 
   let renderer, scene, camera, controls, container, observer, raf = 0
-  let modelRoot, modelScene, reticle
+  let modelRoot, modelScene, reticle, stage, modelSize, ambient, key
   let billboard = null, videoEl = null, videoTexture = null
   let session = null, hitTestSource = null
   let baseScale = 1, yaw = 0
   const gesture = { points: new Map(), startScale: 1, startYaw: 0, startDist: 0, startX: 0, moved: false }
   let overlayEl = null
+  let disposed = false
+  const abort = new AbortController()
 
   // 자이로(기기 방향) 매직윈도우용
   const gyro = { on: false, alpha: 0, beta: 0, gamma: 0, orient: 0, offset: null, height: 1, dist: 4 }
@@ -35,6 +38,7 @@ export function useArViewer() {
   const euler = new Euler()
 
   async function init(el) {
+    if (!el || disposed) return
     container = el
     scene = new Scene()
     camera = new PerspectiveCamera(60, 1, 0.01, 200)
@@ -47,8 +51,9 @@ export function useArViewer() {
     container.appendChild(renderer.domElement)
     renderer.domElement.style.touchAction = 'none'
 
-    scene.add(new AmbientLight('#ffffff', 2.2))
-    const key = new DirectionalLight('#ffeac4', 2.6)
+    ambient = new AmbientLight('#ffffff', 2.2)
+    scene.add(ambient)
+    key = new DirectionalLight('#ffeac4', 2.6)
     key.position.set(6, 12, 8)
     scene.add(key)
 
@@ -65,7 +70,7 @@ export function useArViewer() {
 
     controls = new OrbitControls(camera, renderer.domElement)
     controls.enableDamping = true
-    controls.autoRotate = true
+    controls.autoRotate = !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
     controls.autoRotateSpeed = 1.2
     controls.target.set(0, 0.8, 0)
 
@@ -116,7 +121,8 @@ export function useArViewer() {
   }
 
   // url: 정적 GLB 주소(/ar/..)나 http(s), 또는 로컬 blob: object URL.
-  async function loadModel(url, { baseUrl, scaleMeters = 1, yawDeg = 0, videoUrl = '' } = {}) {
+  async function loadModel(url, { baseUrl, scaleMeters = 1, yawDeg = 0, videoUrl = '', sceneStyle = 'original' } = {}) {
+    if (disposed) return
     state.status = '모델을 불러오는 중'
     state.error = ''
     state.loaded = false
@@ -126,8 +132,9 @@ export function useArViewer() {
         const { GLTFLoader } = await import('three/addons/loaders/GLTFLoader.js')
         gltf = await new GLTFLoader().loadAsync(url)
       } else {
-        gltf = await loadBuildingGlb(url, { baseUrl })
+        gltf = await loadBuildingGlb(url, { baseUrl, signal: abort.signal })
       }
+      if (disposed) { disposeResources([gltf.scene]); return }
       if (modelScene) { modelRoot.remove(modelScene); disposeResources([modelScene]) }
       removeBillboard()
       modelScene = gltf.scene
@@ -136,6 +143,7 @@ export function useArViewer() {
       const box = new Box3().setFromObject(modelScene)
       const center = box.getCenter(new Vector3())
       const size = box.getSize(new Vector3())
+      modelSize = size
       modelScene.position.x -= center.x
       modelScene.position.z -= center.z
       modelScene.position.y -= box.min.y
@@ -149,21 +157,7 @@ export function useArViewer() {
       modelRoot.scale.setScalar(baseScale)
       modelRoot.rotation.y = yaw
 
-      const warn = measureResources([modelScene])
-      state.warnings = warn.errors
-
-      // 폴백(인라인) 프레이밍: 모델 전체가 보이도록 카메라·타깃 조정.
-      const radius = size.length() * baseScale || 2
-      controls.target.set(0, (size.y * baseScale) / 2, 0)
-      camera.position.set(radius * 0.5, size.y * baseScale * 0.6, radius * 1.05)
-      camera.far = Math.max(200, radius * 10)
-      camera.updateProjectionMatrix()
-      controls.update()
-      // 자이로/복원용 값 저장
-      previewCam.pos.copy(camera.position)
-      previewCam.target.copy(controls.target)
-      gyro.height = controls.target.y
-      gyro.dist = camera.position.distanceTo(controls.target)
+      setSceneStyle(sceneStyle)
 
       state.loaded = true
       state.status = ''
@@ -172,6 +166,40 @@ export function useArViewer() {
       state.status = ''
       throw err
     }
+  }
+
+  // Swap only the decorative stage; the model and camera placement logic are unchanged.
+  function setSceneStyle(rawStyle) {
+    if (!modelScene || !modelSize || !controls) return
+    const style = resolveSceneStyle(rawStyle)
+    removeStage()
+    stage = createDiorama(style, modelSize)
+    if (stage) modelRoot.add(stage)
+    ambient.intensity = style === 'original' ? 2.2 : style === 'dusk' ? 1.4 : 1.47
+    ambient.color.set(style === 'dusk' ? '#daccf6' : '#ffffff')
+    key.intensity = style === 'original' ? 2.6 : style === 'dusk' ? 1.95 : 2.22
+    key.color.set(style === 'dusk' ? '#f4ba91' : '#ffeac4')
+    state.warnings = measureResources(stage ? [modelScene, stage] : [modelScene]).errors
+
+    const radius = modelSize.length() * baseScale || 2
+    const modelHeight = modelSize.y * baseScale
+    controls.target.set(0, stage ? modelHeight * .31 : modelHeight * .5, stage ? modelSize.z * baseScale * .1 : 0)
+    camera.position.set(radius * (stage ? .63 : .5), stage ? radius * .70 : modelHeight * .6, radius * (stage ? 1.2 : 1.05))
+    camera.far = Math.max(200, radius * 10)
+    camera.updateProjectionMatrix()
+    controls.update()
+    previewCam.pos.copy(camera.position)
+    previewCam.target.copy(controls.target)
+    gyro.height = controls.target.y
+    gyro.dist = camera.position.distanceTo(controls.target)
+  }
+
+  function removeStage() {
+    if (!stage) return
+    modelRoot.remove(stage)
+    stage.traverse(node => { if (node.isInstancedMesh) node.dispose() })
+    disposeResources([stage])
+    stage = null
   }
 
   function addBillboard(size, videoUrl) {
@@ -259,7 +287,7 @@ export function useArViewer() {
   }
 
   // 인라인 프리뷰 위에 실시간 카메라를 깔 때 자동 회전을 꺼 모델이 공간에 놓인 느낌을 준다.
-  function setAutoRotate(on) { if (controls) controls.autoRotate = on }
+  function setAutoRotate(on) { if (controls) controls.autoRotate = on && !globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches }
 
   // ── 자이로(기기 방향) 매직윈도우 ────────────────────────────────
   const d2r = d => (d * Math.PI) / 180
@@ -340,6 +368,8 @@ export function useArViewer() {
   }
 
   function dispose() {
+    disposed = true
+    abort.abort()
     if (raf) cancelAnimationFrame(raf)
     renderer?.setAnimationLoop(null)
     disableGyro()
@@ -347,11 +377,12 @@ export function useArViewer() {
     observer?.disconnect()
     controls?.dispose()
     removeBillboard()
+    removeStage()
     if (modelScene) disposeResources([modelScene])
     reticle?.geometry.dispose(); reticle?.material.dispose()
     renderer?.dispose()
     renderer?.domElement.remove()
   }
 
-  return { state, init, loadModel, enterAR, exitAR, setAutoRotate, enableGyro, disableGyro, getCanvas: () => renderer?.domElement, dispose }
+  return { state, init, loadModel, setSceneStyle, enterAR, exitAR, setAutoRotate, enableGyro, disableGyro, getCanvas: () => renderer?.domElement, dispose }
 }

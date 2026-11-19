@@ -5,7 +5,8 @@ import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useArViewer } from '../composables/useArViewer.js'
 import { detectArCapabilities, quickLookUrl } from '../ar/platform.js'
-import { getModel, resolveGlbUrl, LOCATION_NAMES } from '../store/arModelStore.js'
+import { SCENE_STYLES } from '../ar/diorama.js'
+import { getModel, getModelSceneStyle, resolveGlbUrl, LOCATION_NAMES } from '../store/arModelStore.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,9 +18,12 @@ const overlay = ref(null)
 const caps = ref({ webxr: false, quickLook: false, secure: false })
 const model = ref(null)
 const starting = ref(false)
+const sceneStyle = computed(() => getModelSceneStyle(locationId, model.value))
+const previewOnly = computed(() => route.query.preview === '1')
 const viewer = useArViewer()
 const { state } = viewer
 let revokeGlb = () => {}
+let disposed = false
 
 // 인라인 매직윈도우용 실시간 카메라(후면). WebXR 세션일 때는 XR 이 카메라를 쓰므로 꺼둔다.
 const camEl = ref(null)
@@ -28,12 +32,13 @@ const camError = ref('')
 let stream = null
 
 async function openCamera() {
-  if (stream) return
+  if (stream || disposed) return
+  camError.value = ''
   try {
     if (!navigator.mediaDevices?.getUserMedia) throw new Error('unsupported')
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
     await nextTick()
-    if (camEl.value) { camEl.value.srcObject = stream; camOn.value = true; viewer.setAutoRotate(false) }
+    if (!disposed && camEl.value) { camEl.value.srcObject = stream; camOn.value = true; viewer.setAutoRotate(false) }
     else stopCamera()
   } catch {
     camError.value = '카메라를 열 수 없어요 (권한·기기 확인). 모델은 프리뷰로 보여요.'
@@ -92,6 +97,7 @@ const usdzHref = computed(() => {
 
 onMounted(async () => {
   caps.value = await detectArCapabilities()
+  if (disposed) return
   // 등록된 모델 우선. 없으면 테스트용 ?glb= 쿼리로 임의 GLB 를 바로 띄울 수 있다(파이프라인 검증용).
   model.value = getModel(locationId)
     || (route.query.glb || route.query.usdz
@@ -100,10 +106,15 @@ onMounted(async () => {
       : null)
   if (!model.value) return
 
-  await viewer.init(viewport.value)
+  try { await viewer.init(viewport.value) }
+  catch { state.error = '이 브라우저에서 3D 화면을 열 수 없어요.'; return }
+  if (previewOnly.value) viewer.setAutoRotate(false)
 
   // GLB(인라인 프리뷰·WebXR)용. iOS 는 USDZ Quick Look 만 쓰므로 GLB 가 없어도 된다.
-  const resolved = await resolveGlbUrl(model.value)
+  let resolved
+  try { resolved = await resolveGlbUrl(model.value) }
+  catch { state.error = '로컬 GLB를 읽지 못했습니다.'; return }
+  if (disposed) { resolved?.revoke(); return }
   if (resolved) {
     revokeGlb = resolved.revoke
     try {
@@ -112,16 +123,18 @@ onMounted(async () => {
         scaleMeters: model.value.scaleMeters ?? 1,
         yawDeg: model.value.yawDeg ?? 0,
         videoUrl: model.value.videoUrl || '',
+        sceneStyle: sceneStyle.value,
       })
     } catch { /* state.error 에 반영됨 */ }
   } else if (!model.value.usdzUrl) {
     state.error = '등록된 GLB 를 찾지 못했습니다.'
   }
   // 모델이 있으면 카메라를 깔아 실제 화면 위에 겹쳐 보이게 한다.
-  if (model.value.glbUrl || model.value.blobKey) openCamera()
+  if (!previewOnly.value && (model.value.glbUrl || model.value.blobKey)) openCamera()
 })
 
 onBeforeUnmount(() => {
+  disposed = true
   stopCamera()
   viewer.dispose()
   revokeGlb()
@@ -137,7 +150,7 @@ async function startAR() {
 </script>
 
 <template>
-  <main class="ar-view" :class="{ 'cam-on': camOn }">
+  <main class="ar-view" :data-scene="sceneStyle" :class="{ 'cam-on': camOn }">
     <!-- 실시간 카메라 배경(매직윈도우) -->
     <video v-show="camOn" ref="camEl" class="cam-bg" autoplay muted playsinline></video>
 
@@ -149,7 +162,7 @@ async function startAR() {
       <button class="av-round" aria-label="뒤로" @click="router.back()">
         <span class="msr">arrow_back</span>
       </button>
-      <div class="av-pill">{{ name }} · 과거 건물 (입체)</div>
+      <div class="av-pill"><small>{{ sceneStyle === 'original' ? '동구 TIME QUEST' : '동구 TIME QUEST · ' + SCENE_STYLES[sceneStyle].label }}</small><strong>{{ name }}</strong></div>
       <button v-if="model" class="av-round cam-toggle" :class="{ on: camOn }" aria-label="카메라 켜고 끄기" @click="toggleCamera">
         <span class="msr">{{ camOn ? 'videocam' : 'videocam_off' }}</span>
       </button>
@@ -173,10 +186,11 @@ async function startAR() {
 
     <!-- 하단 액션 -->
     <div v-if="model" class="av-foot" v-show="!state.presenting">
+      <p v-if="sceneStyle !== 'original'" class="av-scene-label">테마 연출 <span>실측 복원이 아닌 게임풍 표현이에요.</span></p>
       <p class="av-hint">
         {{ caps.webxr ? '‘AR 로 보기’ 를 누르고 바닥을 비추면 건물이 세워져요. 걸어서 옆·뒤를 둘러보세요.'
           : usdzHref ? 'iPhone 은 아래 버튼으로 실제 공간에 건물을 세워 둘러볼 수 있어요.'
-          : '화면에서 드래그로 돌려보기 (이 기기는 실공간 AR 미지원).' }}
+          : '화면을 드래그해 골목을 둘러보세요.' }}
       </p>
 
       <!-- 안드로이드 WebXR -->
@@ -193,10 +207,11 @@ async function startAR() {
       <!-- 폴백: 프리뷰만 -->
       <p v-else class="av-note">
         {{ caps.quickLook ? 'iPhone 용 USDZ 가 아직 등록되지 않았어요.' : '실공간 AR 을 지원하지 않는 기기예요.' }}
-        아래 프리뷰로 모델을 돌려볼 수 있어요.
+        3D 미리보기는 그대로 이용할 수 있어요.
       </p>
 
-      <ul v-if="state.warnings.length" class="av-warn">
+      <p v-if="usdzHref && sceneStyle !== 'original'" class="av-note">iPhone Quick Look에는 등록한 원본 USDZ만 표시돼요.</p>
+      <ul v-if="state.warnings.length"  class="av-warn">
         <li v-for="w in state.warnings" :key="w">{{ w }}</li>
       </ul>
     </div>
@@ -222,7 +237,9 @@ async function startAR() {
 
 <style scoped>
 .ar-view { position: fixed; inset: 0; z-index: 1700; background: radial-gradient(ellipse at 50% 30%, #16303f, #0a141c); overflow: hidden; }
-.ar-view.cam-on { background: #000; }
+.ar-view[data-scene="village"] { background: radial-gradient(ellipse at 50% 40%, #f4e4b6, #b69068 73%, #865b45); }
+.ar-view[data-scene="dusk"] { background: radial-gradient(ellipse at 50% 40%, #f4b78a, #a06e70 68%, #4e394f); }
+.ar-view.cam-on[data-scene] { background: #000; }
 .cam-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; }
 .ar-viewport { position: absolute; inset: 0; z-index: 1; }
 .ar-viewport :deep(canvas) { display: block; width: 100%; height: 100%; }
@@ -246,7 +263,21 @@ async function startAR() {
 .shutter .msr { color: #fff; font-size: 28px; }
 .shutter.flash { animation: shutter-flash .4s ease; }
 @keyframes shutter-flash { 0% { background: #fff; } 100% { background: #ffffff33; } }
-.av-pill { background: #0B2A45E6; border-radius: 16px; padding: 8px 12px; font-family: var(--font); font-size: 12px; font-weight: 900; }
+.av-pill { min-width: 0; background: #0B2A45E6; border-radius: 16px; padding: 7px 12px; font-family: var(--font); }
+.av-pill small, .av-pill strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.av-pill small { font-size: 9px; font-weight: 900; letter-spacing: .08em; }
+.av-pill strong { font-size: 14px; }
+.ar-view:not([data-scene="original"]) .av-pill, .ar-view:not([data-scene="original"]) .av-foot {
+  color: #362317; background: #fff1d7f2; border: 1px solid #9d633e; box-shadow: 0 4px 0 #563a2a88, 0 12px 22px #26170f22;
+}
+.ar-view:not([data-scene="original"]) .av-round:not(.on):not(.dark) { background: #422c20d9; }
+.ar-view:not([data-scene="original"]) .av-hint, .ar-view:not([data-scene="original"]) .av-note { color: #4d3729; }
+.ar-view:not([data-scene="original"]) .av-warn { color: #7b352b; }
+.ar-view:not([data-scene="original"]) .shutter { bottom: auto; top: max(76px, env(safe-area-inset-top)); left: auto; right: 13px; transform: none; width: 40px; height: 40px; border: 1px solid #fff1d7; background: #422c20d9; }
+.ar-view:not([data-scene="original"]) .shutter .msr { font-size: 21px; }
+.av-scene-label { margin: 0; font-size: 12px; font-weight: 900; }
+.av-scene-label span { margin-left: 4px; font-size: 10px; font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .shutter.flash { animation: none; } }
 
 .av-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; padding: 24px; color: #cfe0ee; }
 .av-center .msr.big { font-size: 56px; color: #6f90a8; }

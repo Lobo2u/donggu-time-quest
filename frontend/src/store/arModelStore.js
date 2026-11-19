@@ -1,4 +1,5 @@
 import { reactive } from 'vue'
+import { resolveSceneStyle } from '../ar/diorama.js'
 
 // 현재 코스: 우송대 → 대동천 → 대동벽화마을 → 대동하늘공원 → 대전역
 export const COURSE_STOPS = [
@@ -34,7 +35,7 @@ function load() {
     const raw = localStorage.getItem(META_KEY)
     if (raw) return JSON.parse(raw)
   } catch {}
-  // { [locationId]: { glbUrl, usdzUrl, videoUrl, poster, scaleMeters, yawDeg, blobKey, updated } }
+  // { [locationId]: { glbUrl, usdzUrl, videoUrl, poster, scaleMeters, yawDeg, sceneStyle, blobKey, updated } }
   return {}
 }
 
@@ -64,7 +65,7 @@ function seedCourse() {
 seedCourse()
 
 export function getModel(locationId) {
-  return arModels[locationId] || null
+  return Object.hasOwn(arModels, locationId) ? arModels[locationId] : null
 }
 
 export function hasModel(locationId) {
@@ -72,9 +73,20 @@ export function hasModel(locationId) {
   return !!(m && (m.glbUrl || m.blobKey))
 }
 
+export function getModelSceneStyle(locationId, model) {
+  return resolveSceneStyle(model?.sceneStyle, !model?.blobKey && LOCATION_IDS.includes(locationId) && model?.glbUrl === courseGlb(locationId))
+}
+
 export function saveModel(locationId, data) {
-  arModels[locationId] = { scaleMeters: 1, yawDeg: 0, ...arModels[locationId], ...data, updated: Date.now() }
-  persist()
+  const previous = getModel(locationId)
+  const updated = { scaleMeters: 1, yawDeg: 0, ...previous, ...data, updated: Date.now() }
+  if (updated.sceneStyle !== undefined) updated.sceneStyle = resolveSceneStyle(updated.sceneStyle)
+  arModels[locationId] = updated
+  try { persist() } catch (error) {
+    if (previous) arModels[locationId] = previous
+    else delete arModels[locationId]
+    throw error
+  }
 }
 
 export async function clearModel(locationId) {
