@@ -29,7 +29,9 @@ onBeforeUnmount(() => window.removeEventListener('resize', fit))
   <!-- 휴대폰 화면 틀: 안쪽의 position: fixed 팝업(카메라·대화창 등)이 브라우저 전체가 아니라 이 틀 안에 뜨게 함 -->
   <div class="frame-box" :class="{ full }" :style="{ width: W * scale + 'px', height: H * scale + 'px' }">
     <div class="phone-frame" :style="{ transform: `scale(${scale})` }">
-      <RouterView />
+      <RouterView v-slot="{ Component, route }">
+        <component :is="Component" :key="route.name === 'free-explore-mission' ? route.path : undefined" />
+      </RouterView>
       <GuideReaction />
       <StoryDialog />
     </div>

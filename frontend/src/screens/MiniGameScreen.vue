@@ -1,7 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { game, replayReward } from '../store/gameStore.js'
+import { game, replayReward, completeFreeExploreDemo } from '../store/gameStore.js'
+import { FREE_EXPLORE, freeExploreCategory } from '../data/freeExplore.js'
 import { LOCATIONS, MISSIONS, FIELD_QUESTS, BUDDIES } from '../data/gameData.js'
 
 // 게임 타입별 컴포넌트
@@ -16,11 +17,13 @@ const router = useRouter()
 const route  = useRoute()
 const locationId = route.params.locationId
 const loc     = LOCATIONS[locationId]
-const mission = loc ? (FIELD_QUESTS[loc.missionId] ?? MISSIONS[loc.missionId]) : null
-
-if (!loc || !mission) {
-  router.replace('/map')
-}
+const isFreeExplore = route.name === 'free-explore-mission'
+const mission = !loc ? null : isFreeExplore
+  ? MISSIONS[FREE_EXPLORE.missions[locationId]]
+  : (FIELD_QUESTS[loc.missionId] ?? MISSIONS[loc.missionId])
+const canPlay = !!loc && !!mission
+  && (!isFreeExplore || (game.demoMode && !!freeExploreCategory(locationId)))
+if (!canPlay) router.replace(isFreeExplore ? '/free-explore' : '/map')
 
 const buddy = loc ? BUDDIES[loc.buddyId] : null
 
@@ -36,36 +39,45 @@ const GameComponent = computed(() => gameComponents[mission?.type])
 const isReplay = computed(() => route.query.replay === '1')
 const won = ref(false)
 const replayXp = ref(0)
+let winTimer
+onBeforeUnmount(() => clearTimeout(winTimer))
 
 function onWin() {
+  if (won.value || !canPlay || (isFreeExplore && !game.demoMode)) return
   won.value = true
+  if (isFreeExplore) {
+    completeFreeExploreDemo(locationId)
+    winTimer = setTimeout(() => router.push('/free-explore'), 1200)
+    return
+  }
   react('win')
   if (isReplay.value) {
     const r = replayReward(loc.buddyId)
     replayXp.value = r.xp
-    setTimeout(() => router.push(`/buddy/${loc.buddyId}`), 2000)
+    winTimer = setTimeout(() => router.push(`/buddy/${loc.buddyId}`), 2000)
   } else {
-    setTimeout(() => router.push(`/meet/${loc.buddyId}`), 1600)
+    winTimer = setTimeout(() => router.push(`/meet/${loc.buddyId}`), 1600)
   }
 }
 </script>
 
 <template>
-  <div class="screen minigame-screen" v-if="mission">
+  <div class="screen minigame-screen" v-if="canPlay">
     <!-- 헤더 -->
     <div class="mg-header">
-      <button class="back-btn" @click="$router.push(`/location/${locationId}`)">
+      <button class="back-btn" @click="$router.push(isFreeExplore ? '/free-explore' : `/location/${locationId}`)">
         <span class="msr" style="font-size:24px; color:var(--navy)">arrow_back</span>
       </button>
       <div class="header-texts">
-        <span class="header-sub">{{ loc.name }} · {{ isReplay ? '재도전 (유대 성장)' : '미션' }}</span>
+        <span class="header-sub">{{ loc.name }} · {{ isFreeExplore ? '자유 탐험 · 시연' : isReplay ? '재도전 (유대 성장)' : '미션' }}</span>
         <span class="header-title">{{ mission.title }}</span>
       </div>
     </div>
 
     <!-- 미션 안내 -->
     <div class="mission-intro">
-      <span v-if="isReplay">{{ buddy?.name }}와(과) 다시 도전해 유대를 쌓아요. (조각 중복 보상 없음)</span>
+      <span v-if="isFreeExplore">시연 미션이에요. 실제 방문이나 현장 보상으로 기록되지 않아요. {{ mission.intro }}</span>
+      <span v-else-if="isReplay">{{ buddy?.name }}와(과) 다시 도전해 유대를 쌓아요. (조각 중복 보상 없음)</span>
       <span v-else>{{ mission.intro }}</span>
     </div>
 
@@ -74,7 +86,11 @@ function onWin() {
       <div class="win-overlay" v-if="won">
         <div class="win-box">
           <div class="win-stars">✨ ✨ ✨</div>
-          <template v-if="isReplay">
+          <template v-if="isFreeExplore">
+            <p class="win-title">시연 미션 완료!</p>
+            <p class="win-sub">같은 장소는 한 번만 기록돼요.</p>
+          </template>
+          <template v-else-if="isReplay">
             <p class="win-title">유대 +{{ replayXp }} XP</p>
             <p class="win-sub">{{ buddy?.name }}와(과) 더 가까워졌어요!</p>
           </template>
@@ -95,7 +111,7 @@ function onWin() {
     />
 
     <!-- 저장 후 나가기 -->
-    <button class="exit-btn" @click="$router.push('/map')">
+    <button class="exit-btn" @click="$router.push(isFreeExplore ? '/free-explore' : '/map')">
       <span class="msr" style="font-size:16px">save</span>
       저장 후 나가기
     </button>

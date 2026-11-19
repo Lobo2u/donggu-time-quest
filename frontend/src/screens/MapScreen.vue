@@ -12,6 +12,7 @@ import {
   startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo,
   spawnWildNear, collectWild, WILD_COLLECT_RADIUS,
 } from '../store/geoStore.js'
+import { FREE_EXPLORE, freeExploreProgress } from '../data/freeExplore.js'
 import { LOCATIONS, STORES } from '../data/gameData.js'
 
 const router = useRouter()
@@ -39,6 +40,7 @@ function requestWait(s) { myTickets[s.id] = storeWait(s) + 1 }
 let rafId = null
 
 const locationList = Object.values(LOCATIONS)
+const freeProgress = computed(() => freeExploreProgress(game.freeExplore))
 
 // ── 근접 계산 ─────────────────────────────────────────────────────────────────
 function distTo(loc) {
@@ -458,6 +460,14 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <button class="free-explore-link" type="button" @click="router.push('/free-explore')">
+      자유 탐험 <span>· 시연</span>
+      <span v-if="game.demoMode">
+        인기 {{ Math.min(freeProgress.counts.popular, FREE_EXPLORE.targets.popular) }}/{{ FREE_EXPLORE.targets.popular }}
+        · 숨은 {{ Math.min(freeProgress.counts.hidden, FREE_EXPLORE.targets.hidden) }}/{{ FREE_EXPLORE.targets.hidden }}
+      </span>
+    </button>
+
     <!-- 메뉴 팝오버 -->
     <Transition name="menu">
       <div class="menu-pop" v-if="menuOpen">
@@ -697,6 +707,14 @@ onBeforeUnmount(() => {
   border: none; border-radius: 14px; box-shadow: 0 4px 12px #062B4033;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
+
+.free-explore-link {
+  position: absolute; top: 102px; left: 12px; z-index: 11;
+  background: var(--white); color: var(--navy); min-height: 36px;
+  padding: 5px 10px; border: 0; border-radius: 10px;
+  box-shadow: 0 4px 12px #062B4033; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.free-explore-link span { color: var(--teal-dark); margin-left: 3px; }
 
 /* 메뉴 팝오버 */
 .menu-scrim { position: absolute; inset: 0; z-index: 14; }

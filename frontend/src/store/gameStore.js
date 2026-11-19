@@ -1,6 +1,7 @@
 import { reactive, watch } from 'vue'
 import { track } from './statsStore.js'
 import { COURSES } from '../data/gameData.js'
+import { restoreFreeExplore, recordDemoCompletion, claimDemoBadge } from '../data/freeExplore.js'
 
 const SAVE_KEY = 'donggu-tq-v1'
 
@@ -10,6 +11,7 @@ const defaultState = () => ({
   demoMode: true,
   player: { level: 1, xp: 0, shards: 0, nickname: '탐험가' },
   // 미션투어 코스: 완주 보상 수령 여부, 획득 뱃지
+  freeExplore: restoreFreeExplore(), // 독립된 시연 기록. 일반 현장 인증/보상에는 반영하지 않음
   courses: {},       // { [courseId]: { rewardClaimed: bool } }
   badges: [],        // 획득한 완주 뱃지 이름들
   seenStories: [],   // 이미 본 스토리 대화 id (StoryDialog)
@@ -57,6 +59,7 @@ function loadSave() {
         dailyBonus: { ...base.dailyBonus, ...parsed.dailyBonus },
         coupons:    { ...base.coupons,    ...parsed.coupons },
         courses:    { ...base.courses,    ...parsed.courses },
+        freeExplore: restoreFreeExplore(parsed.freeExplore),
         badges:     parsed.badges ?? base.badges,
       }
     }
@@ -149,6 +152,23 @@ export function addBuddyXp(buddyId, amount) {
   b.owned = true
   b.xp += amount
   while (b.xp >= 100) { b.level += 1; b.xp -= 100 }
+}
+
+// 자유 탐험: 시연 중 기존 미니게임을 끝낸 경우에만 독립 기록을 갱신
+export function completeFreeExploreDemo(locationId) {
+  if (!game.demoMode) return false
+  const next = recordDemoCompletion(game.freeExplore, locationId)
+  if (!next) return false
+  game.freeExplore = next
+  return true
+}
+
+export function claimFreeExploreDemoBadge() {
+  if (!game.demoMode) return false
+  const next = claimDemoBadge(game.freeExplore)
+  if (!next) return false
+  game.freeExplore = next
+  return true
 }
 
 // ── 일일 탐험 보너스 ──────────────────────────────────────────────────────────
