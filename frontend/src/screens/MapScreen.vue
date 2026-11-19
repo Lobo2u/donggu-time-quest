@@ -13,8 +13,10 @@ import {
   spawnWildNear, collectWild, WILD_COLLECT_RADIUS,
 } from '../store/geoStore.js'
 import { LOCATIONS, STORES } from '../data/gameData.js'
+import { partsCount as windPartsCount } from '../store/windQuestStore.js'
 
 const router = useRouter()
+const windParts = computed(() => windPartsCount())
 const mapEl  = ref(null)
 const selected = ref(null)
 const selectedStore = ref(null)
@@ -480,6 +482,16 @@ onBeforeUnmount(() => {
     </Transition>
     <div class="menu-scrim" v-if="menuOpen" @click="menuOpen = false"></div>
 
+    <!-- 대표 퀘스트 시작 배너 -->
+    <button class="wind-banner" @click="router.push('/wind')">
+      <span class="wb-ic msr">toys</span>
+      <span class="wb-texts">
+        <span class="wb-title">대동의 바람을 찾아서</span>
+        <span class="wb-sub">풍차 부품 {{ windParts }}/3 · 대표 퀘스트</span>
+      </span>
+      <span class="msr wb-go">chevron_right</span>
+    </button>
+
     <!-- 현재 목표 -->
     <div class="objective">
       <div class="obj-step">
@@ -722,6 +734,18 @@ onBeforeUnmount(() => {
   box-shadow: 0 6px 16px #00152255;
   display: flex; gap: 12px; padding: 10px 14px; align-items: center;
 }
+.wind-banner {
+  position: absolute; left: 12px; right: 12px; top: 180px; z-index: 10;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: none; cursor: pointer; border-radius: 16px;
+  background: linear-gradient(100deg, #2f6b4a, #1e6b3a); color: #fff;
+  box-shadow: 0 6px 16px #00152255; font-family: var(--font); text-align: left;
+}
+.wb-ic { font-size: 24px; color: #ffe08a; }
+.wb-texts { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.wb-title { font-size: 14px; font-weight: 900; }
+.wb-sub { font-size: 11px; color: #d6ead9; }
+.wb-go { color: #cfe0d6; }
 .obj-step {
   width: 42px; height: 42px; background: var(--orange);
   border-radius: 50%; display: flex; align-items: center;

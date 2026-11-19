@@ -8,6 +8,7 @@ import ArrivalQr from '../components/ArrivalQr.vue'
 import GuidePicker from '../components/GuidePicker.vue'
 import MascotSvg from '../components/MascotSvg.vue'
 import CameraMock from '../components/CameraMock.vue'
+import { hasModel } from '../store/arModelStore.js'
 
 // 도착 확인 반경: 지도 근접 표시(arrivalRadius 300m)보다 좁게, 건물 앞에 있어야 QR 이 뜸.
 // GPS 오차는 최대 30m 까지만 봐줌 (byeol-night gpsCheck 와 같은 규칙)
@@ -19,6 +20,9 @@ const locationId = route.params.id
 const loc = LOCATIONS[locationId]
 
 if (!loc) router.replace('/map')
+
+// 이 장소에 등록된 입체 AR 건물이 있으면 진입 노출
+const canAr = computed(() => hasModel(locationId))
 
 const storyStep = ref(0)
 const gpsState = ref('idle') // idle | checking | near | far | denied
@@ -372,6 +376,9 @@ onBeforeUnmount(stopAutoScroll)
       <div v-else class="already-done">
         <span class="msr" style="font-size:36px; color:var(--teal)">check_circle</span>
         <p>이미 탐험을 완료한 장소예요!</p>
+        <button v-if="canAr" class="btn-ar" @click="$router.push('/ar-view/' + locationId)">
+          <span class="msr">view_in_ar</span> 입체로 보기 (AR)
+        </button>
         <div style="display:flex; gap:10px; margin-top:12px; width:100%;">
           <button class="btn-secondary" style="flex:1" @click="$router.push('/map')">지도로</button>
           <button class="btn-primary" style="flex:1" @click="$router.push('/collection')">도감 보기</button>
@@ -582,6 +589,12 @@ onBeforeUnmount(stopAutoScroll)
   display: flex; flex-direction: column; align-items: center;
   gap: 8px; background: var(--sky); border-radius: 22px; padding: 24px;
   font-size: 15px; font-weight: 800; color: var(--ink); text-align: center;
+}
+.btn-ar {
+  width: 100%; margin-top: 14px; height: 48px; border-radius: 14px;
+  border: 2px solid #2f7fb0; background: #eaf4fb; color: #0b2a45;
+  font-family: var(--font); font-size: 14px; font-weight: 900; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 
 .qr-checkin-card {
