@@ -64,6 +64,18 @@ function gable(w, d, rh, cx = 0, cy = 0, cz = 0) {
   return g
 }
 
+// 아치(함석 곡면) 지붕 — 용마루 x축, z 방향으로 완만히 휨. 바닥 y=0.
+function archRoof(w, d, rise, cx = 0, cy = 0, cz = 0, segs = 6) {
+  const g = newGeom(), hw = w / 2, hd = d / 2
+  const pts = []
+  for (let i = 0; i <= segs; i++) { const t = i / segs; pts.push([-hd + d * t, rise * Math.sin(Math.PI * t)]) }
+  for (let i = 0; i < segs; i++) {
+    const [z0, y0] = pts[i], [z1, y1] = pts[i + 1]
+    addQuad(g, [cx - hw, cy + y0, cz + z0], [cx + hw, cy + y0, cz + z0], [cx + hw, cy + y1, cz + z1], [cx - hw, cy + y1, cz + z1])
+  }
+  return g
+}
+
 // 원기둥/원뿔(rT=0 이면 원뿔). 바닥 y=0.
 function cylinder(rT, rB, h, seg, cx = 0, cy = 0, cz = 0) {
   const g = newGeom()
@@ -201,10 +213,14 @@ function facadeBox(sx, sy, sz, cx, cy, cz, bodyColor) {
   return [P(body, bodyColor, false), P(g, [1, 1, 1], true)]
 }
 
-// 작은 집(벽 + 박공지붕). texWall=true 면 정면에만 벽화 텍스처.
+// 작은 집(벽 + 함석 곡면지붕 + 주황 용마루). texWall=true 면 정면에만 벽화 텍스처.
 function house(w, h, d, cx, cy, cz, wallColor, roofColor = C.redRoof, texWall = false) {
   const wall = texWall ? facadeBox(w, h, d, cx, cy + h / 2, cz, wallColor) : [P(box(w, h, d, cx, cy + h / 2, cz), wallColor)]
-  return [...wall, P(gable(w + 0.2, d + 0.2, h * 0.5, cx, cy + h, cz), roofColor)]
+  return [
+    ...wall,
+    P(archRoof(w + 0.3, d + 0.3, h * 0.38, cx, cy + h, cz), roofColor),
+    P(box(w + 0.35, 0.14, 0.28, cx, cy + h + h * 0.38, cz), C.roofOrange), // 용마루
+  ]
 }
 // 풍차 날개 4개(허브 앞면)
 function windmillBlades(hx, hy, hz) {
@@ -254,11 +270,12 @@ const buildings = {
   // 우송대: 언덕 위 흰 고층 타워(계단형 상부·창 띠) + 정문 돌기둥·차단바 + 안내판(실사진) + 나무
   woosong: [
     P(box(15, 0.3, 11, 0, 0.15, 0), C.ground),
-    P(box(10, 1.2, 5, -1, 0.6, -3.5), C.grass),           // 뒤쪽 언덕
-    P(box(5, 13, 4.5, -1, 7.7, -3.5), C.tower),           // 타워 본체(언덕 위)
-    P(box(3.4, 1.8, 3.2, -1, 15.1, -3.5), C.tower),       // 계단형 상부
-    P(box(5.4, 0.6, 4.9, -1, 1.3, -3.5), C.panelDk),      // 하단 띠
-    ...winStrips(4.4, -1, -1.19, 2.4, 7, 1.5, C.dglass),  // 전면 창 띠
+    P(box(11, 1.2, 5, -1, 0.6, -3.5), C.grass),           // 뒤쪽 언덕
+    P(box(6.4, 13.5, 5, -1, 7.95, -3.5), C.tower),        // 타워 본체(언덕 위)
+    P(box(4.6, 2.0, 3.6, -1, 15.7, -3.5), C.tower),       // 계단형 상부
+    P(box(2.0, 1.6, 2.4, -1, 17.5, -3.5), C.panelDk),     // 옥탑
+    P(box(6.8, 0.6, 5.4, -1, 1.3, -3.5), C.panelDk),      // 하단 띠
+    ...winStrips(5.6, -1, -0.94, 2.6, 8, 1.4, C.dglass),  // 전면 창 띠
     // 정문 돌기둥 2 + 상단 캡 + 차단바
     P(box(0.8, 3.4, 0.8, -4.2, 1.7, 3.4), C.panelDk),
     P(box(1.0, 0.4, 1.0, -4.2, 3.5, 3.4), C.panel),
@@ -282,6 +299,8 @@ const buildings = {
     // 우측 경사 유리 콘코스
     P(box(7, 5, 5, 5, 2.5, -0.4), C.panelDk),
     P(translate(rotateX(box(7, 6.8, 0.5, 0, 0, 0), -0.26), 5, 3.2, 2.2), C.dglass), // 경사 유리
+    ...[-2, 0, 2].map(dy => P(translate(rotateX(box(7, 0.1, 0.54, 0, dy, 0), -0.26), 5, 3.2, 2.2), C.steel)),   // 가로 멀리온
+    ...[-2.5, 0, 2.5].map(dx => P(translate(rotateX(box(0.1, 6.8, 0.54, dx, 0, 0), -0.26), 5, 3.2, 2.2), C.steel)), // 세로 멀리온
     // 전면 캐노피 + 입구 유리 + 파란 샤프트
     P(box(13, 0.4, 2.4, -1.2, 3.1, 3.3), C.panelDk),
     P(box(12, 2.4, 0.15, -1.2, 1.5, 3.2), C.dglass),
