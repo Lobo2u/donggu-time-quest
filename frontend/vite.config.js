@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 const base = process.env.BASE_PATH || '/'
 
 // 폰에서 HTTPS 로 열어 보기 위한 임시 터널 주소 허용 (cloudflared · pinggy · localtunnel)
-const tunnelHosts = ['.trycloudflare.com', '.pinggy.link', '.loca.lt']
+const tunnelHosts = ['.trycloudflare.com', '.pinggy.link', '.pinggy-free.link', '.free.pinggy.net', '.loca.lt']
 
 export default defineConfig({
   base,

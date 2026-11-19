@@ -2,10 +2,13 @@
 // 카메라 위 옛 모습 겹치기 — byeol-night 'AR 뮤지컬'의 카메라 + 위치 맞추기 방식을 옮김.
 // 카메라 화면(목업: 장소의 현재 모습) 위에 과거 재현 일러스트를 반투명하게 겹치고,
 // '위치 맞추기'를 켜면 손가락으로 옮기기/크기 조절해 실제 건물에 맞춘다.
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import SceneSvg from './SceneSvg.vue'
 import CameraMock from './CameraMock.vue'
 import { useFit } from '../composables/useFit.js'
+import { getOverlay } from '../store/arOverlayStore.js'
+import { hasModel } from '../store/arModelStore.js'
 
 const props = defineProps({
   variant: { type: String, default: 'sojedom' },
@@ -13,10 +16,15 @@ const props = defineProps({
 })
 const emit = defineEmits(['close'])
 
+const router = useRouter()
+const has3d = computed(() => hasModel(props.variant))
+function viewIn3d() { router.push(`/ar-view/${props.variant}`) }
 
-const opacity = ref(0.6)
+// 관리자(AR 저작)가 올린 과거 사진/영상이 있으면 그걸 겹치고, 없으면 기본 재현 일러스트를 쓴다.
+const admin = computed(() => getOverlay(props.variant))
+const opacity = ref(admin.value?.opacity ?? 0.6)
 const aligning = ref(false)
-const fit = useFit(aligning)
+const fit = useFit(aligning, admin.value ? { x: admin.value.x, y: admin.value.y, s: admin.value.s } : undefined)
 
 </script>
 
@@ -36,9 +44,11 @@ const fit = useFit(aligning)
     </div>
     <p class="pc-hint">{{ aligning ? '한 손가락으로 옮기고, 두 손가락으로 크기를 맞춰요' : '건물을 화면에 담고 옛 모습과 겹쳐 봐요' }}</p>
 
-    <!-- 겹친 과거 장면 -->
+    <!-- 겹친 과거 장면: 관리자가 올린 자료 우선, 없으면 재현 일러스트 -->
     <div class="pc-scene" :class="{ aligning }" :style="[fit.style.value, { opacity }]" v-on="fit.handlers">
-      <SceneSvg :variant="variant" era="past" />
+      <video v-if="admin && admin.kind === 'video'" :src="admin.src" class="pc-media" autoplay muted loop playsinline></video>
+      <img v-else-if="admin" :src="admin.src" class="pc-media" alt="과거 모습" />
+      <SceneSvg v-else :variant="variant" era="past" />
     </div>
 
     <!-- 하단: 투명도 · 안내 -->
@@ -48,7 +58,10 @@ const fit = useFit(aligning)
         <input type="range" min="0.15" max="1" step="0.05" v-model.number="opacity" aria-label="옛 모습 진하기" />
         <span>과거</span>
       </label>
-      <p class="pc-note">※ 역사 재현 일러스트(창작)입니다. 실제 과거 사진이 아니에요.</p>
+      <p class="pc-note" v-if="!admin">※ 역사 재현 일러스트(창작)입니다. 실제 과거 사진이 아니에요.</p>
+      <button v-if="has3d" class="pc-3d" @click="viewIn3d">
+        <span class="msr" style="font-size:20px">view_in_ar</span> 입체로 보기 (AR)
+      </button>
       <button class="pc-done" @click="emit('close')">다 봤어요</button>
     </div>
   </div>
@@ -81,6 +94,7 @@ const fit = useFit(aligning)
   border-radius: 12px; overflow: hidden; touch-action: none; transform-origin: center;
 }
 .pc-scene.aligning { outline: 2px dashed var(--orange); outline-offset: 4px; cursor: move; }
+.pc-media { display: block; width: 100%; height: auto; }
 
 .pc-foot {
   position: absolute; left: 12px; right: 12px; bottom: 16px; z-index: 2;
@@ -90,6 +104,11 @@ const fit = useFit(aligning)
 .pc-slider { display: flex; align-items: center; gap: 10px; color: white; font-size: 12px; font-weight: 800; }
 .pc-slider input { flex: 1; accent-color: var(--orange); }
 .pc-note { font-size: 10px; font-weight: 600; color: #BFD3E6; text-align: center; word-break: keep-all; }
+.pc-3d {
+  height: 48px; border: 2px solid var(--orange); border-radius: 14px; cursor: pointer;
+  background: #0008; color: #fff; font-family: var(--font); font-size: 15px; font-weight: 900;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
 .pc-done {
   height: 48px; border: none; border-radius: 14px; cursor: pointer;
   background: var(--orange); color: var(--navy); font-family: var(--font); font-size: 15px; font-weight: 900;

@@ -51,5 +51,9 @@ export default createRouter({
     { path: '/ranking',              component: RankingScreen },
     { path: '/grade',                component: GradeScreen },
     { path: '/ar-building',          component: () => import('../screens/BuildingArScreen.vue') },
+    { path: '/ar-studio',            component: () => import('../screens/ArStudioScreen.vue') },
+    { path: '/ar-view/:locationId',  component: () => import('../screens/ArViewerScreen.vue') },
+    { path: '/ar-model-studio',      component: () => import('../screens/ArModelStudioScreen.vue') },
+    { path: '/ar-console',           component: () => import('../screens/ArAdminScreen.vue') },
   ],
 })
