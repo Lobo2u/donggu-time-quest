@@ -55,5 +55,8 @@ export default createRouter({
     { path: '/ar-view/:locationId',  component: () => import('../screens/ArViewerScreen.vue') },
     { path: '/ar-model-studio',      component: () => import('../screens/ArModelStudioScreen.vue') },
     { path: '/ar-console',           component: () => import('../screens/ArAdminScreen.vue') },
+    { path: '/wind',                 component: () => import('../screens/WindQuestScreen.vue') },
+    { path: '/wind/assemble',        component: () => import('../screens/WindAssembleScreen.vue') },
+    { path: '/wind/:stopId',         component: () => import('../screens/WindStopScreen.vue') },
   ],
 })

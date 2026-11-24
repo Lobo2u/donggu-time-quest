@@ -9,12 +9,14 @@ import OnboardingTour from '../components/OnboardingTour.vue'
 import { game, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import {
   geo, effectivePos, distanceMeters, bearing, bearingLabel, fmtDistance,
-  startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo,
+  startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo, clearDemoPos,
   spawnWildNear, collectWild, WILD_COLLECT_RADIUS,
 } from '../store/geoStore.js'
 import { LOCATIONS, STORES } from '../data/gameData.js'
+import { partsCount as windPartsCount } from '../store/windQuestStore.js'
 
 const router = useRouter()
+const windParts = computed(() => windPartsCount())
 const mapEl  = ref(null)
 const selected = ref(null)
 const selectedStore = ref(null)
@@ -376,6 +378,24 @@ function recenter() {
   const p = effectivePos()
   if (p && leafletMap) leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
 }
+
+// 시연 ⇄ 실제 GPS 전환. 실제로 바꾸면 가상 위치를 지우고 GPS 추적을 켜 내 위치를 따른다.
+function toggleRealGps() {
+  if (game.demoMode) {
+    game.demoMode = false
+    clearDemoPos()
+    startWatch()
+    // GPS 수신되면 내 위치로 이동 (여러 번 시도)
+    let tries = 0
+    const t = setInterval(() => {
+      tries++
+      if (geo.pos) { recenter(); clearInterval(t) }
+      else if (tries > 12) clearInterval(t)
+    }, 700)
+  } else {
+    game.demoMode = true
+  }
+}
 function go(path) { menuOpen.value = false; router.push(path) }
 
 // ── 반응형 마커 업데이트 ──────────────────────────────────────────────────────
@@ -449,8 +469,11 @@ onBeforeUnmount(() => {
         <button v-if="showDaily" class="hud-btn daily-ctrl" title="오늘의 보너스" @click="claimDailyBonus">
           <span class="msr" style="font-size:20px; color:var(--orange)">redeem</span>
         </button>
-        <button class="hud-btn" title="내 위치" @click="recenter">
-          <span class="msr" style="font-size:20px; color:var(--navy)">my_location</span>
+        <button class="hud-btn" :class="{ 'gps-on': !game.demoMode }" :title="game.demoMode ? '실제 GPS 켜기' : '시연 모드로 전환'" @click="toggleRealGps">
+          <span class="msr" style="font-size:20px" :style="{ color: game.demoMode ? 'var(--navy)' : '#2f7fb0' }">{{ game.demoMode ? 'location_off' : 'my_location' }}</span>
+        </button>
+        <button class="hud-btn" title="내 위치로" @click="recenter">
+          <span class="msr" style="font-size:20px; color:var(--navy)">center_focus_strong</span>
         </button>
         <button class="hud-btn" title="메뉴" @click="menuOpen = !menuOpen">
           <span class="msr" style="font-size:20px; color:var(--navy)">{{ menuOpen ? 'close' : 'menu' }}</span>
@@ -479,6 +502,16 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
     <div class="menu-scrim" v-if="menuOpen" @click="menuOpen = false"></div>
+
+    <!-- 대표 퀘스트 시작 배너 -->
+    <button class="wind-banner" @click="router.push('/wind')">
+      <span class="wb-ic msr">toys</span>
+      <span class="wb-texts">
+        <span class="wb-title">대동의 바람을 찾아서</span>
+        <span class="wb-sub">풍차 부품 {{ windParts }}/3 · 대표 퀘스트</span>
+      </span>
+      <span class="msr wb-go">chevron_right</span>
+    </button>
 
     <!-- 현재 목표 -->
     <div class="objective">
@@ -697,6 +730,7 @@ onBeforeUnmount(() => {
   border: none; border-radius: 14px; box-shadow: 0 4px 12px #062B4033;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
+.hud-btn.gps-on { background: #e4f1fb; box-shadow: 0 0 0 2px #2f7fb0 inset, 0 4px 12px #062B4033; }
 
 /* 메뉴 팝오버 */
 .menu-scrim { position: absolute; inset: 0; z-index: 14; }
@@ -722,6 +756,18 @@ onBeforeUnmount(() => {
   box-shadow: 0 6px 16px #00152255;
   display: flex; gap: 12px; padding: 10px 14px; align-items: center;
 }
+.wind-banner {
+  position: absolute; left: 12px; right: 12px; top: 180px; z-index: 10;
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: none; cursor: pointer; border-radius: 16px;
+  background: linear-gradient(100deg, #2f6b4a, #1e6b3a); color: #fff;
+  box-shadow: 0 6px 16px #00152255; font-family: var(--font); text-align: left;
+}
+.wb-ic { font-size: 24px; color: #ffe08a; }
+.wb-texts { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.wb-title { font-size: 14px; font-weight: 900; }
+.wb-sub { font-size: 11px; color: #d6ead9; }
+.wb-go { color: #cfe0d6; }
 .obj-step {
   width: 42px; height: 42px; background: var(--orange);
   border-radius: 50%; display: flex; align-items: center;

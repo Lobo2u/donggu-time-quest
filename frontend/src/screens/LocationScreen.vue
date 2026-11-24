@@ -8,6 +8,7 @@ import ArrivalQr from '../components/ArrivalQr.vue'
 import GuidePicker from '../components/GuidePicker.vue'
 import MascotSvg from '../components/MascotSvg.vue'
 import CameraMock from '../components/CameraMock.vue'
+import { hasModel } from '../store/arModelStore.js'
 
 // 도착 확인 반경: 지도 근접 표시(arrivalRadius 300m)보다 좁게, 건물 앞에 있어야 QR 이 뜸.
 // GPS 오차는 최대 30m 까지만 봐줌 (byeol-night gpsCheck 와 같은 규칙)
@@ -19,6 +20,9 @@ const locationId = route.params.id
 const loc = LOCATIONS[locationId]
 
 if (!loc) router.replace('/map')
+
+// 이 장소에 등록된 입체 AR 건물이 있으면 진입 노출
+const canAr = computed(() => hasModel(locationId))
 
 const storyStep = ref(0)
 const gpsState = ref('idle') // idle | checking | near | far | denied
@@ -38,10 +42,18 @@ function nextStory() {
   if (storyStep.value < loc.storyContext.length) storyStep.value++
 }
 
+function getPos(opts) {
+  return new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, opts))
+}
 async function readGPS() {
-  const pos = await new Promise((res, rej) =>
-    navigator.geolocation.getCurrentPosition(res, rej, { enableHighAccuracy: true, timeout: 8000 })
-  )
+  if (!navigator.geolocation) { const e = new Error('unavailable'); e.code = 2; throw e }
+  let pos
+  try {
+    pos = await getPos({ enableHighAccuracy: true, timeout: 9000, maximumAge: 5000 })
+  } catch (e) {
+    if (e.code === 1) throw e               // 권한 거부는 그대로
+    pos = await getPos({ enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }) // 타임아웃/불가 → 저정밀 재시도
+  }
   const d = distanceTo(pos.coords.latitude, pos.coords.longitude, loc.lat, loc.lng)
   userDistance.value = Math.round(d)
   return d <= CHECKIN_RADIUS + Math.min(pos.coords.accuracy ?? 0, 30)
@@ -51,8 +63,9 @@ async function checkGPS() {
   gpsState.value = 'checking'
   try {
     gpsState.value = (await readGPS()) ? 'near' : 'far'
-  } catch {
-    gpsState.value = 'denied'
+  } catch (e) {
+    // 권한 거부만 denied, 그 외(타임아웃·실내 등)는 far 로 재시도를 유도
+    gpsState.value = (e && e.code === 1) ? 'denied' : 'far'
   }
 }
 
@@ -372,6 +385,9 @@ onBeforeUnmount(stopAutoScroll)
       <div v-else class="already-done">
         <span class="msr" style="font-size:36px; color:var(--teal)">check_circle</span>
         <p>이미 탐험을 완료한 장소예요!</p>
+        <button v-if="canAr" class="btn-ar" @click="$router.push('/ar-view/' + locationId)">
+          <span class="msr">view_in_ar</span> 입체로 보기 (AR)
+        </button>
         <div style="display:flex; gap:10px; margin-top:12px; width:100%;">
           <button class="btn-secondary" style="flex:1" @click="$router.push('/map')">지도로</button>
           <button class="btn-primary" style="flex:1" @click="$router.push('/collection')">도감 보기</button>
@@ -582,6 +598,12 @@ onBeforeUnmount(stopAutoScroll)
   display: flex; flex-direction: column; align-items: center;
   gap: 8px; background: var(--sky); border-radius: 22px; padding: 24px;
   font-size: 15px; font-weight: 800; color: var(--ink); text-align: center;
+}
+.btn-ar {
+  width: 100%; margin-top: 14px; height: 48px; border-radius: 14px;
+  border: 2px solid #2f7fb0; background: #eaf4fb; color: #0b2a45;
+  font-family: var(--font); font-size: 14px; font-weight: 900; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
 }
 
 .qr-checkin-card {
