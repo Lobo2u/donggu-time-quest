@@ -41,3 +41,6 @@ build/
 
 # 입체 AR 파이프라인 검증용 임시 테스트 GLB (실제 건물 모델로 교체 예정)
 frontend/public/ar/test/
+
+# AWS-only noncommercial photo: excluded from Git distribution
+frontend/public/history/soje-16-garam-original.jpg

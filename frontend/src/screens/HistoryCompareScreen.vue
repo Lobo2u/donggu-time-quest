@@ -1,5 +1,6 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef } from 'vue'
+import PhotoComparison from '../components/PhotoComparison.vue'
 import { HISTORY_SPOTS, verifiedAsset } from '../data/historySpots.js'
 
 const spot = HISTORY_SPOTS['soje-railway-16']
@@ -130,20 +131,13 @@ onBeforeUnmount(clear)
         <p class="notice">수동 체험이에요. 간판을 자동으로 인식하거나 방문을 인증하지 않아요.</p>
         <p>안전한 곳에서 멈춘 뒤, 카메라의 점선 안에 간판을 맞춰 주세요. 간판이 없다면 촬영하거나 사유지에 들어가지 마세요.</p>
       </template>
-      <div class="preview" :class="{ ready: compareReady }">
+      <PhotoComparison v-model="split" :ready="compareReady" :before-label="mode === 'sign' ? '복원 자료' : (localPast ? '내 비교 사진' : '과거')" after-label="현재">
         <video v-if="stream" ref="video" autoplay muted playsinline aria-label="현재 카메라 화면"></video>
-        <img v-else-if="current" :src="current" alt="선택한 현재 사진" @error="photoError('current')">
+        <img v-else-if="current" :src="current" alt="현재로 고른 사진" @error="photoError('current')">
         <div v-else class="placeholder">카메라를 켜거나 현재 사진을 선택하세요.</div>
-        <div v-if="compareReady" class="overlay" :style="{ clipPath: 'inset(0 ' + (100 - split) + '% 0 0)' }">
-          <img :src="overlay" :alt="mode === 'sign' ? '등록된 복원 이미지' : '과거 비교 사진'" :style="{ transform: 'translate(' + x + '%, ' + y + '%) scale(' + zoom / 100 + ')' }" @error="photoError('past')">
-        </div>
-        <template v-if="compareReady">
-          <div class="divider" :style="{ left: split + '%' }" aria-hidden="true"></div>
-          <span class="badge past">{{ mode === 'sign' ? '복원 자료' : (localPast ? '내 과거 사진' : '과거') }}</span>
-          <span class="badge present">현재</span>
-        </template>
         <div v-if="mode === 'sign' && !compareReady" class="aim" aria-hidden="true"></div>
-      </div>
+        <template #before><img :src="overlay" :alt="mode === 'sign' ? '등록된 복원 이미지' : '비교할 옛 사진'" :style="{ transform: 'translate(' + x + '%, ' + y + '%) scale(' + zoom / 100 + ')' }" @error="photoError('past')"></template>
+      </PhotoComparison>
       <div class="actions">
         <button v-if="!stream" type="button" :disabled="pending" @click="startCamera">{{ pending ? '카메라 여는 중…' : '현재 카메라 켜기' }}</button>
         <button v-else type="button" @click="stopCamera">카메라 끄기</button>
@@ -157,8 +151,6 @@ onBeforeUnmount(clear)
         <p v-else-if="confirmed && restoration" role="status">복원 자료: {{ restoration.credit }} · {{ restoration.viewpoint }} <a :href="restoration.sourceUrl" target="_blank" rel="noopener noreferrer">출처 ↗</a> <a :href="restoration.rightsUrl" target="_blank" rel="noopener noreferrer">이용 조건 ↗</a></p>
       </template>
       <div v-if="compareReady" class="adjust">
-        <label for="history-split">과거·현재 경계 {{ split }}%</label>
-        <input id="history-split" v-model.number="split" type="range" min="0" max="100">
         <details>
           <summary>사진 위치·크기 맞춤</summary>
           <label>과거 사진 좌우 <input v-model.number="x" type="range" min="-50" max="50"></label>

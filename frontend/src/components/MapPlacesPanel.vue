@@ -26,6 +26,7 @@ watch(() => [props.active, props.subset], focusTitle)
     <RouterLink class="shelf-link" to="/keepsakes">동구 기념품 수집장 <span aria-hidden="true">›</span></RouterLink>
     <template v-if="activePlace">
       <p>{{ activePlace.anchor }}</p>
+      <RouterLink v-if="activePlace.id === 'daejeon-station'" class="play-preview" to="/history/daejeon-station">대전역 2007·2019 사진 비교</RouterLink>
       <a v-if="activity?.external" class="play-preview" :href="activity.external">날개담장 미니게임 해보기 <span aria-hidden="true">›</span></a>
       <RouterLink v-else-if="activity" class="play-preview" :to="'/place-experience/' + activePlace.id">{{ activity.title }} <span aria-hidden="true">›</span></RouterLink>
       <p v-if="activity?.external?.startsWith('https://')" class="notice">벽화 체험은 동구ON 공개 사이트에서 열립니다. 수집품은 사이트별로 따로 저장되어 이 수집장에 합쳐지지 않습니다.</p>
