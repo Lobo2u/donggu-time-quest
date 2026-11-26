@@ -2,13 +2,13 @@ import { reactive } from 'vue'
 import { game } from './gameStore.js'
 
 // 위치/근접 상태 (포켓몬 GO 스타일 핵심)
-// 실제 GPS 또는 시연용 가상 위치를 단일 소스로 제공.
+// 현장 GPS와 시연 위치를 따로 유지한다.
 
 export const geo = reactive({
   pos: null,          // 실제 GPS 위치 { lat, lng }
   accuracy: null,     // 정확도(m)
   watching: false,
-  error: null,        // 'denied' | 'unavailable' | null
+  error: null,        // 'denied' | 'unavailable' | 'timeout' | null
   demoPos: null,      // 시연용 가상 위치 { lat, lng }
   walkedMeters: 0,    // 누적 이동 거리
   walkRewardShards: 0, // 걷기로 받은 조각 누계
@@ -54,12 +54,11 @@ export { WILD_COLLECT_RADIUS }
 
 let watchId = null
 let lastWalkPos = null
+let watchGeneration = 0
 
-// 유효 위치: 시연 모드일 때만 가상 위치 우선. 실제 모드에선 실제 GPS 우선
-// (시연 모드를 꺼도 과거 demoPos 가 실제 GPS 를 덮어쓰던 문제 수정)
+// 관광 미션에서 사용할 위치. 시연 여부가 실제 GPS를 바꾸지 않는다.
 export function effectivePos() {
-  if (game.demoMode) return geo.demoPos ?? geo.pos
-  return geo.pos ?? geo.demoPos
+  return game.demoMode ? geo.demoPos : geo.pos
 }
 
 export function distanceMeters(a, b) {
@@ -95,41 +94,56 @@ export function fmtDistance(m) {
 }
 
 // ── GPS 추적 ─────────────────────────────────────────────────────────────────
-export function startWatch(highAccuracy = true) {
-  if (!navigator.geolocation) { geo.error = 'unavailable'; return }
-  if (geo.watching) return
+export function startWatch({ retry = false } = {}) {
+  if (geo.watching && !retry) return
+  if (retry) stopWatch()
+  const location = globalThis.navigator?.geolocation
+  if (!location) {
+    geo.error = 'unavailable'
+    return
+  }
+  const generation = ++watchGeneration
+  geo.error = null
   geo.watching = true
-  watchId = navigator.geolocation.watchPosition(
-    ({ coords }) => {
-      geo.error = null
-      geo.accuracy = coords.accuracy
+  const fail = error => {
+    if (generation !== watchGeneration) return
+    const status = error?.code === 1 ? 'denied' : error?.code === 3 ? 'timeout' : 'unavailable'
+    if (status === 'denied') stopWatch()
+    geo.error = status
+    geo.pos = null
+    geo.accuracy = null
+    lastWalkPos = null
+  }
+
+  try {
+    const nextWatchId = location.watchPosition(({ coords }) => {
+      if (generation !== watchGeneration) return
       const next = { lat: coords.latitude, lng: coords.longitude }
-      // 걷기 거리 누적 (실제 GPS 이동 시)
-      if (lastWalkPos) {
+      if (lastWalkPos && !game.demoMode) {
         const d = distanceMeters(lastWalkPos, next)
-        if (d >= 2 && d < 100) accumulateWalk(d) // 노이즈/점프 필터
+        if (d >= 2 && d < 100) accumulateWalk(d)
       }
       lastWalkPos = next
+      geo.error = null
+      geo.accuracy = Number.isFinite(coords.accuracy) ? Math.max(0, coords.accuracy) : null
       geo.pos = next
-    },
-    (err) => {
-      if (err.code === 1) { geo.error = 'denied'; return } // 권한 거부
-      // 타임아웃/불가(실내 등): 고정밀이면 저정밀로 한 번 재시도
-      if (highAccuracy) {
-        navigator.geolocation.clearWatch(watchId); watchId = null; geo.watching = false
-        startWatch(false)
-      } else {
-        geo.error = 'unavailable'
-      }
-    },
-    { enableHighAccuracy: highAccuracy, maximumAge: 5000, timeout: highAccuracy ? 12000 : 20000 },
-  )
+    }, fail, { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 })
+    if (generation === watchGeneration) watchId = nextWatchId
+    else location.clearWatch(nextWatchId)
+  } catch (error) {
+    geo.watching = false
+    fail(error)
+  }
 }
 
 export function stopWatch() {
-  if (watchId != null) navigator.geolocation.clearWatch(watchId)
+  ++watchGeneration
+  if (watchId != null) globalThis.navigator?.geolocation?.clearWatch(watchId)
   watchId = null
   geo.watching = false
+  geo.pos = null
+  geo.accuracy = null
+  geo.error = null
   lastWalkPos = null
 }
 
@@ -147,18 +161,29 @@ export function accumulateWalk(meters) {
 }
 
 // ── 시연 모드 위치 제어 ───────────────────────────────────────────────────────
-export function setDemoPos(lat, lng) { geo.demoPos = { lat, lng } }
-export function clearDemoPos() { geo.demoPos = null }
+export function setDemoPos(lat, lng) {
+  if (game.demoMode) geo.demoPos = { lat, lng }
+}
+export function clearDemoPos() {
+  stopSimulatedWalk()
+  geo.demoPos = null
+}
 
 // 시연: 특정 지점으로 '걸어가기' 애니메이션 (걷기 보상도 적립)
 let walkTimer = null
+export function stopSimulatedWalk() {
+  if (walkTimer != null) clearInterval(walkTimer)
+  walkTimer = null
+}
 export function simulateWalkTo(target, onArrive) {
-  if (walkTimer) clearInterval(walkTimer)
-  const start = effectivePos() ?? { lat: target.lat - 0.004, lng: target.lng - 0.004 }
+  if (!game.demoMode) return
+  stopSimulatedWalk()
+  const start = geo.demoPos ?? { lat: target.lat - 0.004, lng: target.lng - 0.004 }
   geo.demoPos = { ...start }
   const steps = 24
   let i = 0
   walkTimer = setInterval(() => {
+    if (!game.demoMode) { clearDemoPos(); return }
     i++
     const t = i / steps
     const prev = { ...geo.demoPos }
@@ -168,7 +193,7 @@ export function simulateWalkTo(target, onArrive) {
     }
     accumulateWalk(distanceMeters(prev, geo.demoPos))
     if (i >= steps) {
-      clearInterval(walkTimer); walkTimer = null
+      stopSimulatedWalk()
       if (onArrive) onArrive()
     }
   }, 90)
@@ -176,8 +201,9 @@ export function simulateWalkTo(target, onArrive) {
 
 // 시연: 즉시 해당 지점에 위치시키기
 export function teleportDemo(target) {
-  if (walkTimer) { clearInterval(walkTimer); walkTimer = null }
-  geo.demoPos = { lat: target.lat, lng: target.lng }
+  if (!game.demoMode) return
+  stopSimulatedWalk()
+  setDemoPos(target.lat, target.lng)
 }
 
 // 스팟 도착 여부 (반경 안)

@@ -4,14 +4,16 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // GitHub Pages 서브경로 배포용 base (워크플로에서 BASE_PATH 주입)
 const base = process.env.BASE_PATH || '/'
+const awsPreview = base === '/' && process.env.DONGGU_DEPLOY_TARGET === 'aws'
 
 // 폰에서 HTTPS 로 열어 보기 위한 임시 터널 주소 허용 (cloudflared · pinggy · localtunnel)
 const tunnelHosts = ['.trycloudflare.com', '.pinggy.link', '.pinggy-free.link', '.free.pinggy.net', '.loca.lt']
 
+const proxy = { '/api/store-congestion': { target: 'http://localhost:8000' } }
 export default defineConfig({
   base,
-  server: { allowedHosts: tunnelHosts },
-  preview: { allowedHosts: tunnelHosts },
+  server: { allowedHosts: tunnelHosts, proxy },
+  preview: { allowedHosts: tunnelHosts, proxy },
   plugins: [
     vue(),
     VitePWA({
@@ -38,6 +40,7 @@ export default defineConfig({
         ],
       },
       workbox: {
+        ...(awsPreview && { navigateFallbackDenylist: [/^\/daedong-wing-alley-preview\.html(?:\?.*)?$/] }),
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {

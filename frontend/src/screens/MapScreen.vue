@@ -1,15 +1,17 @@
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import MapPlacesPanel from '../components/MapPlacesPanel.vue'
+import { TOUR_PLACES, tourPinGroups, tourPinOffset } from '../data/tourPlaces.js'
 import BottomNavigation from '../components/BottomNavigation.vue'
 import BuddySvg from '../components/BuddySvg.vue'
 import OnboardingTour from '../components/OnboardingTour.vue'
 import { game, canClaimDaily, claimDaily } from '../store/gameStore.js'
 import {
   geo, effectivePos, distanceMeters, bearing, bearingLabel, fmtDistance,
-  startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo, clearDemoPos,
+  startWatch, stopWatch, isWithin, simulateWalkTo, teleportDemo, clearDemoPos, stopSimulatedWalk,
   spawnWildNear, collectWild, WILD_COLLECT_RADIUS,
 } from '../store/geoStore.js'
 import { LOCATIONS, STORES } from '../data/gameData.js'
@@ -20,27 +22,78 @@ const windParts = computed(() => windPartsCount())
 const mapEl  = ref(null)
 const selected = ref(null)
 const selectedStore = ref(null)
+const placesOpen = ref(false)
+const placeActive = ref('')
+const placeSubset = ref(null)
+const allPlacesButton = ref(null)
+let tourLayer = null
 const tick = ref(0) // 근접 재계산 트리거
 
 let leafletMap = null
 let leafletMarkers = {}
 let wildMarkers = {}
-let userMarker = null
+let gpsMarker = null
+let demoMarker = null
 let accuracyCircle = null
 let restorationLayers = {}
 let colorPane = null
 let storeMarkers = {}
+let storePinObstacles = []
 
 // ── 상권 핀 + 웨이팅 ──────────────────────────────────────────────────────────
-const waitOffsets = {}
-STORES.forEach(s => { waitOffsets[s.id] = Math.floor(Math.random() * 3) })
-const myTickets = reactive({})
-function storeWait(s) { return Math.max(0, s.waitBase + (waitOffsets[s.id] || 0)) }
+const congestion = ref(null)
+const loadingCongestion = ref(false)
+const crowdLabels = ['여유', '보통', '약간 혼잡', '혼잡']
+const crowdDate = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric',
+  hour: '2-digit', minute: '2-digit', hour12: false,
+})
+const crowdClock = ref(Date.now())
+const crowdRows = computed(() => ['store', 'area'].flatMap(scope => {
+  const row = congestion.value?.[scope]
+  if (!row || row.scope !== scope || !crowdLabels[row.level - 1] ||
+      !Number.isInteger(row.level) || typeof row.name !== 'string' ||
+      typeof row.source !== 'string' || typeof row.observedAt !== 'string') return []
+  const stamp = new Date(row.observedAt)
+  const age = crowdClock.value - stamp.getTime()
+  if (!Number.isFinite(age) || age < 0 || age > 2 * 60 * 60 * 1000) return []
+  return [{ ...row, label: crowdLabels[row.level - 1], time: crowdDate.format(stamp) }]
+}))
+watch(selectedStore, async (store, _, onCleanup) => {
+  congestion.value = null
+  loadingCongestion.value = !!store
+  if (!store) return
+  const request = new AbortController()
+  crowdClock.value = Date.now()
+  const clock = setInterval(() => { crowdClock.value = Date.now() }, 30000)
+  onCleanup(() => {
+    request.abort()
+    clearInterval(clock)
+  })
+  const timer = setTimeout(() => request.abort(), 8000)
+  try {
+    const url = '/api/store-congestion/' + encodeURIComponent(store.id)
+    const res = await fetch(url, { signal: request.signal, cache: 'no-store' })
+    if (!res.ok) return
+    const payload = await res.json()
+    if (!request.signal.aborted) {
+      crowdClock.value = Date.now()
+      congestion.value = payload
+    }
+  } catch {
+    // Network errors, static hosting, and absent data are never "no wait".
+  } finally {
+    clearTimeout(timer)
+    if (selectedStore.value === store) loadingCongestion.value = false
+  }
+})
 function storeVisible(s) { return locStatus(s.locationId) !== 'locked' }
-function requestWait(s) { myTickets[s.id] = storeWait(s) + 1 }
 let rafId = null
 
 const locationList = Object.values(LOCATIONS)
+const storyPlaces = computed(() => locationList.map(l => ({
+  id: l.id, name: l.name, status: statusLabel(l.id), done: locStatus(l.id) === 'complete',
+})))
 
 // ── 근접 계산 ─────────────────────────────────────────────────────────────────
 function distTo(loc) {
@@ -139,14 +192,16 @@ function initMap() {
 
   // 장소 마커 + 상점 핀 추가
   locationList.forEach(addMarker)
-  renderStores()
+  tourLayer = L.layerGroup().addTo(leafletMap)
+  leafletMap.on('zoomend', renderMapPlaces)
+  leafletMap.whenReady(renderMapPlaces)
 
   // 지도 클릭 시 선택 해제
   leafletMap.on('click', () => { selected.value = null; selectedStore.value = null })
   // 지도 이동/확대 시 컬러 복원 마스크 갱신
   leafletMap.on('move zoom moveend zoomend', updateColorMask)
 
-  focusObjective()
+  focusAllPlaces()
   updateColorMask()
 }
 
@@ -175,13 +230,91 @@ function updateColorMask() {
 }
 
 // 활성 목표(진행중/탐험가능) 위치로 지도 중심 이동. 없으면 전체 보기
-function focusObjective() {
-  const active = locationList.find(l => ['in_progress', 'available'].includes(locStatus(l.id)))
-  if (active) {
-    leafletMap.setView([active.lat, active.lng], 16, { animate: false })
-  } else {
-    const pts = locationList.map(l => [l.lat, l.lng])
-    leafletMap.fitBounds(pts, { padding: [60, 60], maxZoom: 16 })
+function focusAllPlaces() {
+  leafletMap.fitBounds([...locationList, ...TOUR_PLACES].map(l => [l.lat, l.lng]), {
+    paddingTopLeft: [44, 206], paddingBottomRight: [44, 282], maxZoom: 15, animate: false,
+  })
+}
+
+function openPlaces(active = '', subset = null) {
+  selected.value = null
+  selectedStore.value = null
+  placeActive.value = active
+  placeSubset.value = subset
+  placesOpen.value = true
+}
+function closePlaces() {
+  placesOpen.value = false
+  nextTick(() => allPlacesButton.value?.focus())
+}
+function focusTourPlace(id) {
+  const p = TOUR_PLACES.find(place => place.id === id)
+  if (!p || !leafletMap) return
+  placeActive.value = id
+  // Balance the target within the visible area above the bottom sheet.
+  const zoom = Math.max(leafletMap.getZoom(), 16)
+  const target = leafletMap.project([p.lat, p.lng], zoom).add([0, 134])
+  leafletMap.setView(leafletMap.unproject(target, zoom), zoom, { animate: false })
+}
+function focusStoryPlace(id) {
+  const p = LOCATIONS[id]
+  if (!p) return
+  placesOpen.value = false
+  if (canSelect(id)) selected.value = p
+  leafletMap?.setView([p.lat, p.lng], 16, { animate: false })
+  nextTick(() => allPlacesButton.value?.focus())
+}
+function storyPinObstacles(project) {
+  return locationList.flatMap(place => {
+    const p = project(place)
+    return [
+      { x: p.x, y: p.y - 42, rx: 29, ry: 29 },
+      { x: p.x, y: p.y - 2, rx: 34, ry: 13 },
+    ]
+  })
+}
+
+function otherPinObstacles(project) {
+  return [...storyPinObstacles(project), ...geo.wildSpots.map(place => {
+    const p = project(place)
+    return { x: p.x, y: p.y, rx: 22, ry: 22 }
+  })]
+}
+
+function renderMapPlaces() {
+  renderStores()
+  renderTourPins()
+}
+
+function renderTourPins() {
+  if (!leafletMap || !tourLayer) return
+  tourLayer.clearLayers()
+  const project = l => leafletMap.latLngToContainerPoint([l.lat, l.lng])
+  const groups = tourPinGroups(TOUR_PLACES, project)
+  const occupied = [...otherPinObstacles(project), ...storePinObstacles]
+  const size = leafletMap.getSize()
+  for (const places of groups) {
+    const [anchor] = places
+    const title = places.map(p => p.name).join(' / ')
+    const point = project(anchor)
+    const [dx, dy] = tourPinOffset(point, occupied, size)
+    occupied.push({ x: point.x + dx, y: point.y + dy, rx: 22, ry: 22 })
+    const leader = dx || dy ? '<svg width="160" height="160" viewBox="-80 -80 160 160" aria-hidden="true"><line x1="0" y1="0" x2="' + (-dx) + '" y2="' + (-dy) + '"/><circle cx="' + (-dx) + '" cy="' + (-dy) + '" r="2"/></svg>' : ''
+    const marker = L.marker([anchor.lat, anchor.lng], {
+      title, alt: title, riseOnHover: true, zIndexOffset: 120,
+      icon: L.divIcon({
+        className: 'tour-marker', iconSize: [44, 44], iconAnchor: [22 - dx, 22 - dy],
+        html: leader + '<span aria-hidden="true">' + (places.length > 1 ? places.length : '&#9679;') + '</span>',
+      }),
+    }).addTo(tourLayer)
+    marker.getElement()?.setAttribute('aria-label', title)
+    marker.on('click', e => {
+      L.DomEvent.stopPropagation(e)
+      if (places.length === 1) {
+        openPlaces(anchor.id)
+        focusTourPlace(anchor.id)
+      } else openPlaces('', places.map(p => p.id))
+    })
   }
 }
 
@@ -217,29 +350,48 @@ function updateMarker(loc) {
 
 // ── 상점 마커 ─────────────────────────────────────────────────────────────────
 function storeMarkerHtml(s) {
-  const w = storeWait(s)
-  const waitHtml = w > 0
-    ? `<div class="lf-store-wait">대기 ${w}</div>`
-    : `<div class="lf-store-wait ok">바로</div>`
   return `<div class="lf-store${s.hot ? ' hot' : ''}">
     <div class="lf-store-dot"><span class="msr" style="font-size:20px">${s.icon}</span></div>
-    ${waitHtml}
+    <div class="lf-store-wait">혼잡도</div>
   </div>`
 }
 function renderStores() {
   if (!leafletMap) return
+  const project = l => leafletMap.latLngToContainerPoint([l.lat, l.lng])
+  const occupied = otherPinObstacles(project)
+  const size = leafletMap.getSize()
+  storePinObstacles = []
   STORES.forEach(s => {
     const vis = storeVisible(s)
-    const icon = () => L.divIcon({ html: storeMarkerHtml(s), className: '', iconSize: [64, 54], iconAnchor: [32, 48] })
-    if (vis && !storeMarkers[s.id]) {
-      storeMarkers[s.id] = L.marker([s.lat, s.lng], { icon: icon(), zIndexOffset: 300 })
-        .addTo(leafletMap)
-        .on('click', (e) => { L.DomEvent.stopPropagation(e); selected.value = null; selectedStore.value = s })
-    } else if (vis && storeMarkers[s.id]) {
-      storeMarkers[s.id].setIcon(icon())
-    } else if (!vis && storeMarkers[s.id]) {
-      leafletMap.removeLayer(storeMarkers[s.id]); delete storeMarkers[s.id]
+    if (!vis) {
+      if (storeMarkers[s.id]) {
+        leafletMap.removeLayer(storeMarkers[s.id])
+        delete storeMarkers[s.id]
+      }
+      return
     }
+    const point = project(s)
+    const home = { x: point.x, y: point.y - 21 }
+    const [dx, dy] = tourPinOffset(home, occupied, size)
+    const target = { x: home.x + dx, y: home.y + dy, rx: 28, ry: 28 }
+    occupied.push(target)
+    storePinObstacles.push(target)
+    const leader = dx || dy ? '<svg width="180" height="180" viewBox="-90 -90 180 180" aria-hidden="true"><line x1="0" y1="0" x2="' + (-dx) + '" y2="' + (21 - dy) + '"/><circle cx="' + (-dx) + '" cy="' + (21 - dy) + '" r="2"/></svg>' : ''
+    const icon = L.divIcon({
+      html: leader + storeMarkerHtml(s), className: 'store-offset-marker',
+      iconSize: [64, 54], iconAnchor: [32 - dx, 48 - dy],
+    })
+    if (!storeMarkers[s.id]) {
+      storeMarkers[s.id] = L.marker([s.lat, s.lng], { icon, title: s.name, alt: s.name, zIndexOffset: 300 })
+        .addTo(leafletMap)
+        .on('click', e => {
+          L.DomEvent.stopPropagation(e)
+          placesOpen.value = false
+          selected.value = null
+          selectedStore.value = s
+        })
+    } else storeMarkers[s.id].setIcon(icon)
+    storeMarkers[s.id].getElement()?.setAttribute('aria-label', s.name)
   })
 }
 
@@ -262,41 +414,70 @@ function addRestorationEffect(locId) {
 const guideVariant = () => game.guide === 'jungang' ? 'jungang' : 'majung'
 
 function renderPlayer() {
-  const p = effectivePos()
-  if (!leafletMap || !p) return
-  if (!userMarker) {
-    const icon = L.divIcon({
-      html: `<div class="lf-user-marker">
-               <div class="lf-user-pulse"></div>
-               <div class="lf-user-avatar"><img src="${import.meta.env.BASE_URL}sprites/png/${guideVariant() === 'jungang' ? 'jungang' : 'majung'}-idle.png" alt=""></div>
-             </div>`,
-      className: '', iconSize: [46, 46], iconAnchor: [23, 23],
-    })
-    userMarker = L.marker([p.lat, p.lng], { icon, zIndexOffset: 2000 }).addTo(leafletMap)
-    accuracyCircle = L.circle([p.lat, p.lng], {
-      radius: geo.accuracy ?? 30, color: '#4A90D9', fillColor: '#4A90D9',
-      fillOpacity: 0.08, weight: 1, opacity: 0.3,
-    }).addTo(leafletMap)
+  if (!leafletMap) return
+  const real = geo.pos
+  if (real) {
+    const point = [real.lat, real.lng]
+    if (!gpsMarker) {
+      gpsMarker = L.circleMarker(point, { radius: 7, color: '#fff', weight: 2, fillColor: '#1463b5', fillOpacity: 1 })
+        .addTo(leafletMap).bindTooltip('실제 GPS 위치')
+    } else {
+      gpsMarker.setLatLng(point)
+    }
+    if (geo.accuracy != null) {
+      if (!accuracyCircle) {
+        accuracyCircle = L.circle(point, {
+          radius: geo.accuracy, color: '#1463b5', fillOpacity: 0.08, weight: 1, interactive: false,
+        }).addTo(leafletMap)
+      } else {
+        accuracyCircle.setLatLng(point).setRadius(geo.accuracy)
+      }
+    } else if (accuracyCircle) {
+      accuracyCircle.remove()
+      accuracyCircle = null
+    }
   } else {
-    userMarker.setLatLng([p.lat, p.lng])
-    accuracyCircle?.setLatLng([p.lat, p.lng])
-    if (geo.accuracy) accuracyCircle?.setRadius(Math.min(geo.accuracy, 120))
+    gpsMarker?.remove()
+    accuracyCircle?.remove()
+    gpsMarker = accuracyCircle = null
   }
+
+  const demo = game.demoMode ? geo.demoPos : null
+  if (!demo) {
+    demoMarker?.remove()
+    demoMarker = null
+    return
+  }
+  const point = [demo.lat, demo.lng]
+  if (demoMarker) {
+    demoMarker.setLatLng(point)
+    return
+  }
+  const sprite = guideVariant() === 'jungang' ? 'jungang' : 'majung'
+  const icon = L.divIcon({
+    html: `<div class="lf-user-marker"><div class="lf-user-avatar"><img src="${import.meta.env.BASE_URL}sprites/png/${sprite}-idle.png" alt=""></div></div>`,
+    className: '', iconSize: [46, 46], iconAnchor: [23, 23],
+  })
+  demoMarker = L.marker(point, { icon, zIndexOffset: 2000, title: '시연 캐릭터 위치' })
+    .addTo(leafletMap).bindTooltip('시연 캐릭터', { permanent: true, direction: 'bottom' })
 }
 
 function renderWild() {
   if (!leafletMap) return
   const p = effectivePos()
+  let markersChanged = false
   // 제거된 스폰 정리
   Object.keys(wildMarkers).forEach(id => {
     if (!geo.wildSpots.find(w => w.id === id)) {
       leafletMap.removeLayer(wildMarkers[id]); delete wildMarkers[id]
+      markersChanged = true
     }
   })
   geo.wildSpots.forEach(w => {
     const near = p && distanceMeters(p, w) <= WILD_COLLECT_RADIUS
     const html = `<div class="lf-wild${near ? ' near' : ''}"><span class="lf-wild-gem">◆</span></div>`
     if (!wildMarkers[w.id]) {
+      markersChanged = true
       const icon = L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] })
       wildMarkers[w.id] = L.marker([w.lat, w.lng], { icon, zIndexOffset: 500 })
         .addTo(leafletMap)
@@ -305,6 +486,7 @@ function renderWild() {
       wildMarkers[w.id].setIcon(L.divIcon({ html, className: '', iconSize: [40, 40], iconAnchor: [20, 20] }))
     }
   })
+  if (markersChanged) renderMapPlaces()
 }
 
 const wildToast = ref(null)
@@ -355,12 +537,10 @@ function goExplore() {
 // 시연: 선택한 스팟으로 걸어가기 (도착 시뮬레이션)
 const walking = ref(false)
 function walkToSelected() {
-  if (!selected.value) return
+  const target = selected.value
+  if (!game.demoMode || !target) return
   walking.value = true
-  simulateWalkTo(
-    { lat: selected.value.lat, lng: selected.value.lng },
-    () => { walking.value = false; teleportDemo(selected.value); tick.value++ },
-  )
+  simulateWalkTo(target, () => { walking.value = false; tick.value++ })
 }
 
 // 일일 보너스
@@ -374,28 +554,63 @@ function claimDailyBonus() {
 // 메뉴 + 내 위치
 const menuOpen = ref(false)
 const isDev = import.meta.env.DEV
-function recenter() {
-  const p = effectivePos()
-  if (p && leafletMap) leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
+let centerOnNextFix = false
+const gpsStatus = computed(() => {
+  if (geo.error === 'denied') return '위치 권한이 꺼져 있어요. 허용한 뒤 실제 GPS 버튼을 눌러 주세요.'
+  if (geo.error === 'timeout') return 'GPS 응답이 늦어요. 탁 트인 곳에서 다시 시도해 보세요.'
+  if (geo.error === 'unavailable') return 'GPS를 사용할 수 없어요. 위치 설정을 확인해 주세요.'
+  if (geo.pos) return geo.accuracy == null ? '실제 GPS 위치 · 정확도 정보 없음' : `실제 GPS 위치 · 오차 약 ${Math.ceil(geo.accuracy)}m`
+  return geo.watching ? '실제 GPS 위치를 기다리는 중…' : '실제 GPS를 켜려면 내 위치 버튼을 누르세요.'
+})
+
+function centerOnGps() {
+  const p = geo.pos
+  if (!p || !leafletMap) return
+  centerOnNextFix = false
+  leafletMap.flyTo([p.lat, p.lng], 16, { duration: 0.6 })
 }
 
-// 시연 ⇄ 실제 GPS 전환. 실제로 바꾸면 가상 위치를 지우고 GPS 추적을 켜 내 위치를 따른다.
-function toggleRealGps() {
-  if (game.demoMode) {
-    game.demoMode = false
-    clearDemoPos()
-    startWatch()
-    // GPS 수신되면 내 위치로 이동 (여러 번 시도)
-    let tries = 0
-    const t = setInterval(() => {
-      tries++
-      if (geo.pos) { recenter(); clearInterval(t) }
-      else if (tries > 12) clearInterval(t)
-    }, 700)
+function recenter() {
+  if (geo.pos) {
+    centerOnGps()
   } else {
-    game.demoMode = true
+    centerOnNextFix = true
+    startWatch({ retry: !!geo.error })
   }
 }
+
+function initDemoPosition() {
+  if (geo.demoPos) return
+  const objective = locationList.find(loc => ['available', 'in_progress'].includes(locStatus(loc.id))) ?? locationList[0]
+  if (objective) teleportDemo({ lat: objective.lat - 0.0025, lng: objective.lng - 0.0025 })
+}
+
+function toggleDemo() {
+  game.demoMode = !game.demoMode
+  menuOpen.value = false
+}
+
+watch(() => game.demoMode, enabled => {
+  walking.value = false
+  geo.wildSpots = []
+  if (enabled) initDemoPosition()
+  else {
+    clearDemoPos()
+    startWatch()
+  }
+  if (effectivePos()) spawnWildNear(effectivePos(), 3)
+  renderPlayer()
+})
+
+watch(() => geo.pos, (position, previous) => {
+  if (position && centerOnNextFix) centerOnGps()
+  if (!game.demoMode && position && !previous && !geo.wildSpots.length) spawnWildNear(position, 3)
+  renderPlayer()
+})
+
+watch(() => geo.error, error => {
+  if (error === 'denied') centerOnNextFix = false
+})
 function go(path) { menuOpen.value = false; router.push(path) }
 
 // ── 반응형 마커 업데이트 ──────────────────────────────────────────────────────
@@ -407,7 +622,7 @@ watch(
       if (locStatus(loc.id) === 'complete') addRestorationEffect(loc.id)
     })
     updateColorMask()
-    renderStores()
+    renderMapPlaces()
   },
   { deep: true },
 )
@@ -422,15 +637,10 @@ function pickFromRadar(entry) {
 // ── 라이프사이클 ──────────────────────────────────────────────────────────────
 onMounted(() => {
   initMap()
-  startWatch()
-  // 시연: GPS가 없으면 현재 목표 근처를 가상 위치로 설정
-  setTimeout(() => {
-    if (!effectivePos() && game.demoMode) {
-      const obj = locationList.find(l => ['available', 'in_progress'].includes(locStatus(l.id))) ?? locationList[0]
-      teleportDemo({ lat: obj.lat - 0.0025, lng: obj.lng - 0.0025 }) // 조금 떨어진 곳에서 시작
-    }
-    spawnWildNear(effectivePos(), 3)
-  }, 1200)
+  if (game.demoMode) {
+    initDemoPosition()
+    if (effectivePos()) spawnWildNear(effectivePos(), 3)
+  } else startWatch()
   locationList.forEach(loc => {
     if (locStatus(loc.id) === 'complete') addRestorationEffect(loc.id)
   })
@@ -439,6 +649,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   if (rafId) clearTimeout(rafId)
+  centerOnNextFix = false
+  stopSimulatedWalk()
   stopWatch()
   if (leafletMap) { leafletMap.remove(); leafletMap = null }
 })
@@ -469,11 +681,8 @@ onBeforeUnmount(() => {
         <button v-if="showDaily" class="hud-btn daily-ctrl" title="오늘의 보너스" @click="claimDailyBonus">
           <span class="msr" style="font-size:20px; color:var(--orange)">redeem</span>
         </button>
-        <button class="hud-btn" :class="{ 'gps-on': !game.demoMode }" :title="game.demoMode ? '실제 GPS 켜기' : '시연 모드로 전환'" @click="toggleRealGps">
-          <span class="msr" style="font-size:20px" :style="{ color: game.demoMode ? 'var(--navy)' : '#2f7fb0' }">{{ game.demoMode ? 'location_off' : 'my_location' }}</span>
-        </button>
-        <button class="hud-btn" title="내 위치로" @click="recenter">
-          <span class="msr" style="font-size:20px; color:var(--navy)">center_focus_strong</span>
+        <button class="hud-btn" title="내 위치 (실제 GPS)" aria-label="내 위치 (실제 GPS)" @click="recenter">
+          <span class="msr" style="font-size:20px; color:var(--navy)">my_location</span>
         </button>
         <button class="hud-btn" title="메뉴" @click="menuOpen = !menuOpen">
           <span class="msr" style="font-size:20px; color:var(--navy)">{{ menuOpen ? 'close' : 'menu' }}</span>
@@ -481,12 +690,21 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+
+    <button ref="allPlacesButton" type="button" class="all-places-link" :aria-expanded="placesOpen" @click="placesOpen ? closePlaces() : openPlaces()">
+      전체 장소 {{ locationList.length + TOUR_PLACES.length }}
+    </button>
+    <MapPlacesPanel v-if="placesOpen" :story="storyPlaces" :tours="TOUR_PLACES" :active="placeActive" :subset="placeSubset"
+      @close="closePlaces" @show-all="openPlaces()" @focus-place="focusTourPlace" @focus-story="focusStoryPlace" />
+
     <!-- 메뉴 팝오버 -->
     <Transition name="menu">
       <div class="menu-pop" v-if="menuOpen">
+        <button class="menu-item" @click="toggleDemo"><span class="msr">sports_esports</span>{{ game.demoMode ? '시연 모드 끄기' : '시연 모드 켜기' }}</button>
         <button class="menu-item" @click="go('/collection')"><span class="msr">auto_stories</span> 도감</button>
         <button class="menu-item" @click="go('/courses')"><span class="msr">route</span> 코스</button>
         <button class="menu-item" @click="go('/grade')"><span class="msr">workspace_premium</span> 등급 혜택</button>
+        <button class="menu-item" @click="go('/history/sojedom')"><span class="msr">compare</span> 소제동 과거·현재 비교</button>
         <!-- 운영자 메뉴는 개발 빌드에서만 노출 (사용자에게는 보이지 않음) -->
         <template v-if="isDev">
           <div class="menu-sep">운영자</div>
@@ -521,7 +739,7 @@ onBeforeUnmount(() => {
       <div class="obj-texts">
         <span class="obj-label">기억 복원 {{ restorePct }}% · {{ completedCount }} / {{ locationList.length }}곳</span>
         <span class="obj-action">{{ objective }}</span>
-        <span class="obj-next">지도 핀을 눌러 장소를 선택하세요</span>
+        <span class="obj-next" role="status">{{ gpsStatus }}</span>
       </div>
     </div>
 
@@ -581,7 +799,7 @@ onBeforeUnmount(() => {
       <BottomNavigation />
     </div>
 
-    <!-- 상점 바텀 시트 (실시간 웨이팅) -->
+    <!-- 상점 바텀 시트 (장소 혼잡도) -->
     <Transition name="sheet">
       <div class="bottom-sheet store-sheet" v-if="selectedStore">
         <div class="sheet-handle"></div>
@@ -601,31 +819,23 @@ onBeforeUnmount(() => {
             <span class="msr" style="font-size:16px; color:var(--orange)">local_offer</span>
             {{ selectedStore.offer }}
           </div>
-          <!-- 실시간 웨이팅 -->
-          <div class="wait-box" :class="{ now: storeWait(selectedStore) === 0 }">
-            <div class="wait-live"><span class="live-dot"></span> 실시간</div>
-            <template v-if="storeWait(selectedStore) > 0">
-              <span class="wait-num">대기 {{ storeWait(selectedStore) }}팀</span>
-              <span class="wait-min">약 {{ storeWait(selectedStore) * 8 }}분</span>
+          <section class="crowd-box" aria-label="장소 혼잡도" aria-live="polite">
+            <strong>장소 혼잡도</strong>
+            <p v-if="loadingCongestion">혼잡도 확인 중…</p>
+            <template v-else>
+              <div v-for="row in crowdRows" :key="row.scope" class="crowd-row">
+                <strong>{{ row.scope === 'store' ? '매장 혼잡도' : '주변 상권 혼잡도' }}</strong>
+                <span>{{ row.name }} · {{ row.label }}</span>
+                <small>출처: {{ row.source }} · 집계 {{ row.time }} (한국시간)</small>
+              </div>
+              <p v-if="!crowdRows.length">혼잡도 정보 없음</p>
+              <p v-else-if="!crowdRows.some(row => row.scope === 'store')">매장 혼잡도 정보 없음</p>
+              <p v-else-if="!crowdRows.some(row => row.scope === 'area')">주변 상권 혼잡도 정보 없음</p>
             </template>
-            <span v-else class="wait-num">바로 입장 가능</span>
-          </div>
+            <small>대기 팀 수, 대기 시간, 입장 가능 여부를 뜻하지 않아요.</small>
+          </section>
         </div>
-
-        <!-- 대기 신청 / 내 순번 -->
-        <div v-if="myTickets[selectedStore.id]" class="my-ticket">
-          <span class="msr" style="font-size:22px; color:var(--teal)">confirmation_number</span>
-          <div>
-            <p class="ticket-label">내 대기 순번</p>
-            <p class="ticket-num">{{ myTickets[selectedStore.id] }}번 · 앞에 {{ myTickets[selectedStore.id] - 1 }}팀</p>
-          </div>
-        </div>
-        <button v-else class="btn-primary" style="width:100%" @click="requestWait(selectedStore)">
-          <span class="msr" style="font-size:20px; color:var(--navy)">add_task</span>
-          대기 신청하기
-        </button>
-
-        <p class="sheet-note">검색 없이 지도 핀으로 바로 대기 신청 · 데모용 가상 매장입니다</p>
+        <p class="sheet-note">가상 매장 예시 · 대기 신청 및 할인은 실제로 제공되지 않아요.</p>
       </div>
     </Transition>
 
@@ -650,6 +860,9 @@ onBeforeUnmount(() => {
             </div>
           </div>
           <p class="loc-real-note">{{ selected.realNote }}</p>
+          <RouterLink v-if="selected.id === 'sojedom'" class="history-place-link" to="/history/sojedom">
+            소제동 과거·현재 비교
+          </RouterLink>
         </div>
 
         <!-- 완료 상태 -->
@@ -668,7 +881,8 @@ onBeforeUnmount(() => {
             <span class="msr" style="font-size:20px" :style="{ color: arrived(selected) ? 'var(--teal)' : 'var(--orange)' }">
               {{ arrived(selected) ? 'where_to_vote' : 'directions_walk' }}
             </span>
-            <span v-if="arrived(selected)">도착! 이 장소의 미션을 시작할 수 있어요</span>
+            <span v-if="arrived(selected)">{{ game.demoMode ? '시연에서 도착했어요. 미션을 시작할 수 있어요.' : '도착! 이 장소의 미션을 시작할 수 있어요.' }}</span>
+            <span v-else-if="!hasPos">{{ game.demoMode ? '시연 위치를 준비하는 중이에요.' : gpsStatus }}</span>
             <span v-else>아직 <b>{{ fmtDistance(distTo(selected)) }}</b> 남았어요 · 가까이 가면 열려요</span>
           </div>
 
@@ -679,7 +893,7 @@ onBeforeUnmount(() => {
           </button>
 
           <!-- 도착 전 → 시연 걸어가기 -->
-          <button v-else class="btn-walk" :disabled="walking" @click="walkToSelected">
+          <button v-else-if="game.demoMode" class="btn-walk" :disabled="walking" @click="walkToSelected">
             <span class="msr" style="font-size:20px">{{ walking ? 'directions_walk' : 'play_circle' }}</span>
             {{ walking ? '걸어가는 중…' : '여기로 걸어가기 (시연)' }}
           </button>
@@ -688,7 +902,7 @@ onBeforeUnmount(() => {
         <p class="sheet-note">
           {{ arrived(selected)
             ? '스팟에 도착했을 때만 미션·보상이 열려요.'
-            : '실제로는 GPS로 이 위치에 도착하면 열려요. 발표에선 시연 걸어가기로 체험해요.' }}
+            : (game.demoMode ? '시연 이동으로 이 위치에 도착할 수 있어요.' : '실제 GPS로 이 위치에 도착하면 열려요.') }}
         </p>
       </div>
     </Transition>
@@ -730,7 +944,22 @@ onBeforeUnmount(() => {
   border: none; border-radius: 14px; box-shadow: 0 4px 12px #062B4033;
   display: flex; align-items: center; justify-content: center; cursor: pointer;
 }
-.hud-btn.gps-on { background: #e4f1fb; box-shadow: 0 0 0 2px #2f7fb0 inset, 0 4px 12px #062B4033; }
+
+.all-places-link { position:absolute; right:12px; top:155px; z-index:11; min-height:44px; padding:5px 10px; border:0; border-radius:10px; background:white; color:var(--navy); font:inherit; font-size:12px; font-weight:800; box-shadow:0 4px 12px #062B4033; cursor:pointer; }
+:deep(.store-offset-marker svg) { pointer-events:none; position:absolute; left:-58px; top:-63px; overflow:visible; stroke:#54717e; fill:#54717e; stroke-width:1.5; }
+:deep(.store-offset-marker .lf-store) { position:relative; }
+:deep(.tour-marker) { display:grid; place-items:center; background:none; border:0; pointer-events:auto !important; }
+:deep(.tour-marker svg) { pointer-events:none; position:absolute; left:-58px; top:-58px; overflow:visible; stroke:#576f78; fill:#576f78; stroke-width:1.5; }
+:deep(.tour-marker span) { position:relative; display:grid; place-items:center; min-width:23px; height:23px; border:1.5px dashed #566d76; border-radius:50%; background:#fbfdfbe8; color:#3b555f; font:700 12px sans-serif; box-shadow:0 2px 5px #2a36475a; }
+:deep(.tour-marker:focus-visible span) { outline:2px solid #104d65; outline-offset:3px; }
+.history-place-link { display:inline-flex; align-items:center; min-height:44px; color:var(--teal-dark); font-weight:750; }
+.free-explore-link {
+  position: absolute; top: 102px; left: 12px; z-index: 11;
+  background: var(--white); color: var(--navy); min-height: 36px;
+  padding: 5px 10px; border: 0; border-radius: 10px;
+  box-shadow: 0 4px 12px #062B4033; font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+}
+.free-explore-link span { color: var(--teal-dark); margin-left: 3px; }
 
 /* 메뉴 팝오버 */
 .menu-scrim { position: absolute; inset: 0; z-index: 14; }
@@ -936,16 +1165,8 @@ onBeforeUnmount(() => {
 .store-local { font-size: 10px; font-weight: 900; color: var(--teal-dark); background: var(--sky); border-radius: 6px; padding: 1px 6px; }
 .store-name { font-size: 18px; font-weight: 900; color: var(--ink); }
 .store-offer { display: flex; align-items: center; gap: 6px; background: var(--orange-soft); border-radius: 12px; padding: 8px 12px; font-size: 13px; font-weight: 800; color: var(--ink); }
-.wait-box { display: flex; align-items: center; gap: 10px; background: #FFF0F0; border-radius: 12px; padding: 10px 12px; }
-.wait-box.now { background: #DFF7F4; }
-.wait-live { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 900; color: #D64B5F; }
-.wait-box.now .wait-live { color: var(--teal-dark); }
-.live-dot { width: 7px; height: 7px; border-radius: 50%; background: #D64B5F; animation: live-pulse 1.2s infinite; }
-.wait-box.now .live-dot { background: var(--teal); }
+.crowd-box { padding: 12px; background: #eef6fb; border-radius: 12px; }
+.crowd-row { display: grid; gap: 3px; margin: 8px 0; }
+.crowd-box small { color: var(--muted); }
 @keyframes live-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-.wait-num { font-size: 15px; font-weight: 900; color: var(--ink); }
-.wait-min { font-size: 12px; font-weight: 700; color: var(--muted); margin-left: auto; }
-.my-ticket { display: flex; align-items: center; gap: 10px; background: var(--sky); border-radius: 14px; padding: 12px; }
-.ticket-label { font-size: 11px; font-weight: 700; color: var(--muted); }
-.ticket-num { font-size: 16px; font-weight: 900; color: var(--teal-dark); }
 </style>

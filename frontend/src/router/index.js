@@ -28,6 +28,9 @@ export default createRouter({
     // 시작 화면 없이 바로 지도로 (동반자는 첫 QR 인식 때 고름)
     { path: '/',                      redirect: '/map' },
     { path: '/map',                   component: MapScreen },
+    { path: '/keepsakes', component: () => import('../screens/KeepsakeScreen.vue') },
+    { path: '/place-experience/:placeId', component: () => import('../screens/TourExperienceScreen.vue') },
+    { path: '/history/sojedom',     component: () => import('../screens/HistoryCompareScreen.vue') },
     { path: '/location/:id',          component: LocationScreen },
     { path: '/minigame/:locationId',  component: MiniGameScreen },
     { path: '/meet/:buddyId',         component: BuddyMeetScreen },

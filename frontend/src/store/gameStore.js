@@ -7,7 +7,8 @@ const SAVE_KEY = 'donggu-tq-v1'
 const defaultState = () => ({
   initialized: false,
   guide: null,       // 'majung' | 'jungang'
-  demoMode: true,
+  demoMode: false,
+  positionModeVersion: 1,
   player: { level: 1, xp: 0, shards: 0, nickname: '탐험가' },
   // 미션투어 코스: 완주 보상 수령 여부, 획득 뱃지
   courses: {},       // { [courseId]: { rewardClaimed: bool } }
@@ -50,6 +51,8 @@ function loadSave() {
       return {
         ...base,
         ...parsed,
+        positionModeVersion: base.positionModeVersion,
+        demoMode: parsed.positionModeVersion === base.positionModeVersion && parsed.demoMode === true,
         player:     { ...base.player,     ...parsed.player },
         locations:  { ...base.locations,  ...parsed.locations },
         buddies:    { ...base.buddies,    ...parsed.buddies },
